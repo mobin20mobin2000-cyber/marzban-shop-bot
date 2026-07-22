@@ -1,8 +1,17 @@
 # =========================
-# سرویس کاربران
+# storage.py
 # =========================
 
+# سرویس کاربران
 services = {}
+
+# سفارش‌ها
+orders = {}
+
+
+# =========================
+# سرویس‌ها
+# =========================
 
 def save_service(user_id, username, subscription):
 
@@ -21,15 +30,16 @@ def get_service(user_id):
 # سفارش‌ها
 # =========================
 
-orders = {}
-
-
 def save_order(order_id, user_id, plan):
 
     orders[order_id] = {
+
         "order_id": order_id,
+
         "user_id": user_id,
+
         "plan": plan
+
     }
 
 
