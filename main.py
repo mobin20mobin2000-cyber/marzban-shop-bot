@@ -1,56 +1,56 @@
-import requests
-
-from config import (
-    MARZBAN_URL,
-    MARZBAN_USERNAME,
-    MARZBAN_PASSWORD
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes
 )
 
+from config import BOT_TOKEN
 
-class Marzban:
-
-    def __init__(self):
-        self.url = MARZBAN_URL.rstrip("/")
-        self.username = MARZBAN_USERNAME
-        self.password = MARZBAN_PASSWORD
-        self.token = None
+from marzban import Marzban
 
 
-    def login(self):
-        url = f"{self.url}/api/admin/token"
 
-        data = {
-            "username": self.username,
-            "password": self.password
-        }
+async def start(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
 
-        response = requests.post(
-            url,
-            data=data,
-            timeout=20
+    await update.message.reply_text(
+        "🤖 ربات فروش Marzban فعال شد\n\n"
+        "به زودی سیستم فروش اشتراک آماده می‌شود."
+    )
+
+
+
+def main():
+
+    print("Testing Marzban...")
+
+    marzban = Marzban()
+
+    marzban.test()
+
+
+    app = Application.builder() \
+        .token(BOT_TOKEN) \
+        .build()
+
+
+    app.add_handler(
+        CommandHandler(
+            "start",
+            start
         )
-
-        if response.status_code == 200:
-            self.token = response.json()["access_token"]
-            return True
-
-        print("Login Error:")
-        print(response.text)
-
-        return False
+    )
 
 
-    def headers(self):
-        return {
-            "Authorization": f"Bearer {self.token}"
-        }
+    print("Bot Started ✅")
 
 
-    def test(self):
+    app.run_polling()
 
-        if self.login():
-            print("Marzban Connected ✅")
-            return True
 
-        print("Marzban Failed ❌")
-        return False
+
+if __name__ == "__main__":
+    main()
