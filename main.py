@@ -5,8 +5,7 @@ from telegram.ext import (
     ContextTypes
 )
 
-from config import BOT_TOKEN
-
+from config import BOT_TOKEN, MARZBAN_URL
 from marzban import Marzban
 
 
@@ -18,7 +17,7 @@ async def start(
 
     await update.message.reply_text(
         "🤖 ربات فروش Marzban فعال شد\n\n"
-        "🛒 سیستم فروش به زودی آماده می‌شود."
+        "🛒 سیستم فروش اشتراک آماده است."
     )
 
 
@@ -29,7 +28,7 @@ async def test_user(
 ):
 
     await update.message.reply_text(
-        "⏳ در حال ساخت کاربر..."
+        "⏳ در حال ساخت اشتراک..."
     )
 
 
@@ -45,34 +44,48 @@ async def test_user(
     if result:
 
         username = result.get(
-            "username",
-            "نامشخص"
+            "username"
+        )
+
+
+        sub_path = result.get(
+            "subscription_url"
+        )
+
+
+        sub_url = (
+            MARZBAN_URL.rstrip("/")
+            +
+            sub_path
         )
 
 
         await update.message.reply_text(
-            f"✅ کاربر ساخته شد\n\n"
-            f"👤 نام کاربر:\n"
+            "✅ اشتراک شما آماده شد\n\n"
+            f"👤 کاربر:\n"
             f"{username}\n\n"
-            f"{result}"
+            "📅 مدت: ۳۰ روز\n\n"
+            "🔗 لینک سابسکریپشن:\n"
+            f"{sub_url}"
         )
+
 
     else:
 
         await update.message.reply_text(
-            "❌ ساخت کاربر ناموفق بود"
+            "❌ ساخت اشتراک ناموفق بود"
         )
 
 
 
 def main():
 
-
-    print("Testing Marzban...")
+    print(
+        "Testing Marzban..."
+    )
 
 
     marzban = Marzban()
-
 
     marzban.test()
 
@@ -84,7 +97,6 @@ def main():
         .token(BOT_TOKEN)
         .build()
     )
-
 
 
     app.add_handler(
@@ -101,7 +113,6 @@ def main():
             test_user
         )
     )
-
 
 
     print(
