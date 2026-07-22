@@ -4,13 +4,17 @@ from marzban import Marzban
 
 
 
+# =========================
+# دکمه های تایید رسید
+# =========================
+
 def admin_buttons(order_id):
 
     keyboard = [
 
         [
             InlineKeyboardButton(
-                "✅ تأیید پرداخت",
+                "✅ تایید پرداخت",
                 callback_data=f"approve_{order_id}"
             )
         ],
@@ -29,6 +33,11 @@ def admin_buttons(order_id):
 
 
 
+
+# =========================
+# ساخت سرویس در Marzban
+# =========================
+
 def create_subscription(volume):
 
     marzban = Marzban()
@@ -38,25 +47,25 @@ def create_subscription(volume):
 
         username=None,
 
-        data_limit=volume * 1024 * 1024 * 1024
+        data_limit=volume
 
     )
 
 
-    if user:
+    if not user:
+
+        return None
 
 
-        return {
 
-            "username": user.get(
-                "username"
-            ),
+    return {
 
-            "subscription": user.get(
-                "subscription_url"
-            )
+        "username": user.get(
+            "username"
+        ),
 
-        }
+        "subscription": user.get(
+            "subscription_url"
+        )
 
-
-    return None
+    }
