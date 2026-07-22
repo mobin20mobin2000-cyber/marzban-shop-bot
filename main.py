@@ -25,6 +25,7 @@ from storage import save_service, get_service
 
 from admin_panel import admin_panel
 
+from plans import get_plan, PLANS
 
 
 waiting_receipt = {}
@@ -62,6 +63,33 @@ def user_menu():
 
 
 
+def plans_keyboard():
+
+    keyboard = []
+
+    for key, plan in PLANS.items():
+
+        keyboard.append(
+
+            [
+
+                InlineKeyboardButton(
+
+                    f"🟢 {plan['name']} - {plan['price']} تومان",
+
+                    callback_data=f"plan_{key}"
+
+                )
+
+            ]
+
+        )
+
+
+    return InlineKeyboardMarkup(keyboard)
+
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.effective_user.id
@@ -90,7 +118,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
@@ -102,32 +129,89 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    # خرید
+    # نمایش پلن ها
 
     if query.data == "buy":
+
+        await query.message.reply_text(
+
+            "📦 حجم مورد نظر را انتخاب کنید:",
+
+            reply_markup=plans_keyboard()
+
+        )
+
+
+
+    # انتخاب پلن
+
+    elif query.data.startswith("plan_"):
+
+
+        plan_id = query.data.replace(
+
+            "plan_",
+
+            ""
+
+        )
+
+
+        plan = get_plan(plan_id)
+
+
+        if not plan:
+
+            return
+
 
 
         order_id = create_order(
 
             user_id,
 
-            "30 روزه"
+            plan["name"]
 
         )
 
 
-        waiting_receipt[user_id] = order_id
+        waiting_receipt[user_id] = {
+
+            "order_id": order_id,
+
+            "plan": plan
+
+        }
+
 
 
         await query.message.reply_text(
 
             get_payment_text(order_id)
 
+            +
+
+            "\n\n📦 پلن انتخابی:\n"
+
+            +
+
+            plan["name"]
+
+            +
+
+            "\n💰 مبلغ:\n"
+
+            +
+
+            plan["price"]
+
+            +
+
+            " تومان"
+
         )
 
 
-
-    # سرویس من
 
     elif query.data == "my_service":
 
@@ -137,13 +221,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if service:
 
-
             await query.message.reply_text(
 
                 "📦 سرویس شما:\n\n"
 
-                f"👤 کاربر:\n"
-                f"{service['username']}\n\n"
+                f"👤 {service['username']}\n\n"
 
                 "🔗 لینک اشتراک:\n"
 
@@ -151,9 +233,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             )
 
-
         else:
-
 
             await query.message.reply_text(
 
@@ -163,10 +243,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    # پشتیبانی
-
     elif query.data == "support":
-
 
         await query.message.reply_text(
 
@@ -175,8 +252,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-
-    # تایید مدیر
 
     elif query.data.startswith("approve_"):
 
@@ -190,14 +265,14 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-        customer_id = None
+        customer = None
 
 
-        for uid, oid in waiting_receipt.items():
+        for uid, data in waiting_receipt.items():
 
-            if oid == order_id:
+            if data["order_id"] == order_id:
 
-                customer_id = uid
+                customer = uid
 
                 break
 
@@ -207,7 +282,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-        if result and customer_id:
+        if result and customer:
 
 
             sub = (
@@ -223,7 +298,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             save_service(
 
-                customer_id,
+                customer,
 
                 result["username"],
 
@@ -232,10 +307,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
 
-
             await context.bot.send_message(
 
-                chat_id=customer_id,
+                chat_id=customer,
 
                 text=(
 
@@ -252,37 +326,14 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await query.message.reply_text(
 
-                "✅ ساخته شد و برای مشتری ارسال شد."
+                "✅ ساخته شد و ارسال شد."
 
             )
-
-
-        else:
-
-
-            await query.message.reply_text(
-
-                "❌ خطا در ساخت سرویس"
-
-            )
-
-
-
-    elif query.data.startswith("reject_"):
-
-
-        await query.message.reply_text(
-
-            "❌ پرداخت رد شد"
-
-        )
-
 
 
 
 
 async def receipt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
 
     user_id = update.message.from_user.id
 
@@ -292,12 +343,10 @@ async def receipt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 
-
-    order_id = waiting_receipt[user_id]
+    data = waiting_receipt[user_id]
 
 
     photo = update.message.photo[-1]
-
 
 
     await context.bot.send_photo(
@@ -312,30 +361,27 @@ async def receipt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             f"👤 کاربر: {user_id}\n"
 
-            f"🆔 سفارش: {order_id}"
+            f"🆔 سفارش: {data['order_id']}\n"
+
+            f"📦 پلن: {data['plan']['name']}"
 
         ),
 
-        reply_markup=admin_buttons(order_id)
+        reply_markup=admin_buttons(data["order_id"])
 
     )
-
 
 
     await update.message.reply_text(
 
-        "✅ رسید ارسال شد\n"
-
-        "⏳ منتظر تأیید باشید."
+        "✅ رسید ارسال شد."
 
     )
-
 
 
 
 
 def main():
-
 
     app = (
 
@@ -348,7 +394,6 @@ def main():
         .build()
 
     )
-
 
 
     app.add_handler(
@@ -396,7 +441,6 @@ def main():
 
 
     app.run_polling()
-
 
 
 
