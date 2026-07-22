@@ -4,6 +4,7 @@ from telegram import (
     InlineKeyboardMarkup
 )
 
+
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -16,14 +17,18 @@ from telegram.ext import (
 
 from config import (
     BOT_TOKEN,
-    ADMIN_ID,
-    MARZBAN_URL
+    ADMIN_ID
 )
 
 
 from order import create_order
+
 from payment import get_payment_text
-from admin import admin_buttons, create_subscription
+
+from admin import (
+    admin_buttons,
+    create_subscription
+)
 
 from storage import (
     save_service,
@@ -53,21 +58,21 @@ def user_menu():
 
         [
             InlineKeyboardButton(
-                "🛒 خرید اشتراک",
+                "🟢 🛒 خرید اشتراک",
                 callback_data="buy"
             )
         ],
 
         [
             InlineKeyboardButton(
-                "📦 سرویس من",
+                "🔵 📦 سرویس من",
                 callback_data="my_service"
             )
         ],
 
         [
             InlineKeyboardButton(
-                "🆘 پشتیبانی",
+                "🔴 🆘 پشتیبانی",
                 callback_data="support"
             )
         ]
@@ -75,6 +80,8 @@ def user_menu():
     ]
 
     return InlineKeyboardMarkup(keyboard)
+
+
 
 
 
@@ -173,8 +180,6 @@ async def button(
 
 
 
-    # خرید اشتراک
-
     if query.data == "buy":
 
 
@@ -187,8 +192,6 @@ async def button(
         )
 
 
-
-    # انتخاب پلن
 
     elif query.data.startswith("plan_"):
 
@@ -203,7 +206,6 @@ async def button(
 
 
         if not plan:
-
 
             await query.message.reply_text(
                 "❌ پلن پیدا نشد"
@@ -225,7 +227,6 @@ async def button(
 
         waiting_receipt[user_id] = {
 
-
             "order_id": order_id,
 
             "plan": plan
@@ -244,7 +245,7 @@ async def button(
 
 
 
-📦 پلن انتخابی:
+📦 پلن:
 {plan['name']}
 
 
@@ -252,7 +253,7 @@ async def button(
 {plan['price']:,} تومان
 
 
-بعد از پرداخت، تصویر رسید را ارسال کنید.
+بعد از پرداخت عکس رسید را ارسال کنید.
 """
 
         )
@@ -260,24 +261,27 @@ async def button(
 # سرویس من
 # =========================
 
-async def my_service(
+async def show_service(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-    user_id = update.effective_user.id
+    query = update.callback_query
+
+    user_id = query.from_user.id
+
 
     service = get_service(user_id)
 
 
     if service:
 
-        await update.message.reply_text(
+
+        await query.message.reply_text(
 
             "📦 سرویس شما:\n\n"
 
-            f"👤 نام کاربری:\n"
-            f"{service['username']}\n\n"
+            f"👤 کاربر:\n{service['username']}\n\n"
 
             "🔗 لینک اشتراک:\n"
 
@@ -288,8 +292,11 @@ async def my_service(
 
     else:
 
-        await update.message.reply_text(
-            "❌ هنوز سرویسی ندارید."
+
+        await query.message.reply_text(
+
+            "❌ سرویسی برای شما ثبت نشده."
+
         )
 
 
@@ -297,7 +304,30 @@ async def my_service(
 
 
 # =========================
-# دریافت رسید پرداخت
+# پشتیبانی
+# =========================
+
+async def show_support(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+
+    await query.message.reply_text(
+
+        "🆘 پشتیبانی\n\n"
+        "پیام خود را ارسال کنید."
+
+    )
+
+
+
+
+
+# =========================
+# دریافت رسید
 # =========================
 
 async def receipt_photo(
@@ -331,11 +361,11 @@ async def receipt_photo(
 
             "📥 رسید پرداخت جدید\n\n"
 
-            f"👤 کاربر:\n{user_id}\n\n"
+            f"👤 کاربر: {user_id}\n"
 
-            f"🆔 سفارش:\n{data['order_id']}\n\n"
+            f"🆔 سفارش: {data['order_id']}\n"
 
-            f"📦 پلن:\n{data['plan']['name']}"
+            f"📦 پلن: {data['plan']['name']}"
 
         ),
 
@@ -346,10 +376,9 @@ async def receipt_photo(
     )
 
 
-
     await update.message.reply_text(
 
-        "✅ رسید شما ارسال شد.\n"
+        "✅ رسید ارسال شد.\n"
         "⏳ منتظر تایید مدیریت باشید."
 
     )
@@ -358,35 +387,20 @@ async def receipt_photo(
 
 
 
-
 # =========================
-# پشتیبانی
+# تایید پرداخت
 # =========================
 
-async def support(
+async def approve_payment(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-    await update.message.reply_text(
+    query = update.callback_query
 
-        "🆘 پشتیبانی\n\n"
-        "پیام خود را ارسال کنید."
-
-    )
+    await query.answer()
 
 
-
-
-
-# =========================
-# تایید و رد پرداخت
-# =========================
-
-async def approve_order(
-    query,
-    context
-):
 
     order_id = query.data.replace(
         "approve_",
@@ -399,10 +413,10 @@ async def approve_order(
 
     for uid, data in waiting_receipt.items():
 
-
         if data["order_id"] == order_id:
 
             customer = uid
+
             break
 
 
@@ -411,7 +425,9 @@ async def approve_order(
 
 
         await query.message.reply_text(
+
             "❌ سفارش پیدا نشد"
+
         )
 
         return
@@ -423,4 +439,162 @@ async def approve_order(
 
 
 
-   
+    result = create_subscription(
+
+        plan["volume"]
+
+    )
+
+
+
+    if not result:
+
+
+        await query.message.reply_text(
+
+            "❌ خطا در ساخت سرویس"
+
+        )
+
+        return
+
+
+
+
+    save_service(
+
+        customer,
+
+        result["username"],
+
+        result["subscription"]
+
+    )
+
+
+
+    await context.bot.send_message(
+
+        chat_id=customer,
+
+        text=(
+
+            "✅ پرداخت تایید شد\n\n"
+
+            f"👤 نام کاربری:\n"
+            f"{result['username']}\n\n"
+
+            "🔗 لینک اشتراک:\n"
+
+            f"{result['subscription']}"
+
+        )
+
+    )
+
+
+
+    await query.message.reply_text(
+
+        "✅ سرویس ساخته شد و برای مشتری ارسال شد."
+
+    )
+
+
+
+
+
+# =========================
+# رد پرداخت
+# =========================
+
+async def reject_payment(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+    await query.message.reply_text(
+
+        "❌ پرداخت رد شد."
+
+    )
+
+
+
+
+
+# =========================
+# اجرای ربات
+# =========================
+
+def main():
+
+
+    app = (
+
+        Application
+
+        .builder()
+
+        .token(BOT_TOKEN)
+
+        .build()
+
+    )
+
+
+
+    app.add_handler(
+
+        CommandHandler(
+
+            "start",
+
+            start
+
+        )
+
+    )
+
+
+
+    app.add_handler(
+
+        CallbackQueryHandler(
+
+            button,
+
+            pattern="^(buy|plan_)"
+
+        )
+
+    )
+
+
+
+    app.add_handler(
+
+        CallbackQueryHandler(
+
+            show_service,
+
+            pattern="^my_service$"
+
+        )
+
+    )
+
+
+
+    app.add_handler(
+
+        CallbackQueryHandler(
+
+            show_support,
+
+           
