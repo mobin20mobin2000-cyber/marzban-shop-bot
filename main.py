@@ -46,6 +46,10 @@ from plans import (
 
 
 
+# ذخیره سفارش موقت نیست
+# سفارش ها در storage ذخیره می شوند
+
+
 
 # =========================
 # منوی کاربر
@@ -85,7 +89,7 @@ def user_menu():
 
 
 # =========================
-# لیست پلن ها
+# منوی پلن ها
 # =========================
 
 def plans_keyboard():
@@ -122,7 +126,7 @@ def plans_keyboard():
 
 
 # =========================
-# شروع
+# شروع ربات
 # =========================
 
 async def start(
@@ -135,6 +139,7 @@ async def start(
 
     if user_id == ADMIN_ID:
 
+
         await update.message.reply_text(
 
             "👨‍💼 پنل مدیریت",
@@ -143,7 +148,9 @@ async def start(
 
         )
 
+
     else:
+
 
         await update.message.reply_text(
 
@@ -159,7 +166,7 @@ async def start(
 
 
 # =========================
-# دکمه ها
+# دکمه های اصلی
 # =========================
 
 async def button(
@@ -236,7 +243,7 @@ async def show_support(
 
 
 # =========================
-# دریافت رسید
+# دریافت رسید پرداخت
 # =========================
 
 async def receipt_photo(
@@ -260,7 +267,6 @@ async def receipt_photo(
         )
 
         return
-
 
 
 
@@ -406,7 +412,7 @@ async def approve_payment(
 
             "✅ پرداخت تایید شد\n\n"
 
-            f"👤 کاربر:\n"
+            f"👤 نام کاربری:\n"
             f"{result['username']}\n\n"
 
             "🔗 لینک اشتراک:\n"
@@ -420,10 +426,8 @@ async def approve_payment(
 
     await query.message.reply_text(
 
-        "✅ سرویس ساخته شد و ارسال گردید."
-
-)
-    # =========================
+        "✅ سرویس ساخته شد
+      # =========================
 # رد پرداخت
 # =========================
 
@@ -592,4 +596,4 @@ def main():
 
 if __name__ == "__main__":
 
-    main()
+    main()  
