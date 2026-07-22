@@ -8,34 +8,49 @@ from telegram.ext import (
     Application,
     CommandHandler,
     CallbackQueryHandler,
-    ContextTypes
+    MessageHandler,
+    ContextTypes,
+    filters
 )
 
 from config import BOT_TOKEN, ADMIN_ID
+
 from order import create_order
+
+from payment import get_payment_text
+
+
+
+# ذخیره سفارش فعال هر کاربر
+waiting_receipt = {}
+
 
 
 def user_menu():
 
     keyboard = [
+
         [
             InlineKeyboardButton(
                 "🛒 خرید اشتراک",
                 callback_data="buy"
             )
         ],
+
         [
             InlineKeyboardButton(
                 "📦 سرویس من",
                 callback_data="my_service"
             )
         ],
+
         [
             InlineKeyboardButton(
                 "🆘 پشتیبانی",
                 callback_data="support"
             )
         ]
+
     ]
 
     return InlineKeyboardMarkup(keyboard)
@@ -45,18 +60,14 @@ def user_menu():
 def admin_menu():
 
     keyboard = [
+
         [
             InlineKeyboardButton(
                 "📋 سفارش‌ها",
                 callback_data="orders"
             )
-        ],
-        [
-            InlineKeyboardButton(
-                "📊 آمار",
-                callback_data="stats"
-            )
         ]
+
     ]
 
     return InlineKeyboardMarkup(keyboard)
@@ -66,6 +77,7 @@ def admin_menu():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.effective_user.id
+
 
     if user_id == ADMIN_ID:
 
@@ -77,7 +89,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
 
         await update.message.reply_text(
-            "🤖 به ربات فروش خوش آمدید\n\n"
+            "🤖 خوش آمدید\n\n"
             "یکی از گزینه‌ها را انتخاب کنید:",
             reply_markup=user_menu()
         )
@@ -93,6 +105,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
 
 
+
     if query.data == "buy":
 
         order_id = create_order(
@@ -100,41 +113,79 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "30 روزه"
         )
 
-        await query.message.reply_text(
-            "🛒 سفارش شما ساخته شد\n\n"
-            "📦 پلن: ۳۰ روزه\n"
-            f"🆔 شماره سفارش:\n{order_id}\n\n"
-            "💳 لطفاً مبلغ را کارت‌به‌کارت کنید."
-        )
 
+        waiting_receipt[user_id] = order_id
 
-    elif query.data == "support":
 
         await query.message.reply_text(
-            "🆘 پشتیبانی\n"
-            "به زودی فعال می‌شود."
+            get_payment_text(order_id)
         )
+
 
 
     elif query.data == "my_service":
 
         await query.message.reply_text(
-            "📦 هنوز سرویسی برای شما ثبت نشده است."
+            "📦 هنوز سرویسی ندارید."
         )
+
+
+
+    elif query.data == "support":
+
+        await query.message.reply_text(
+            "🆘 پشتیبانی"
+        )
+
 
 
     elif query.data == "orders":
 
         await query.message.reply_text(
-            "📋 بخش سفارش‌ها در حال ساخت است."
+            "📋 سفارش‌ها در حال آماده‌سازی است."
         )
 
 
-    elif query.data == "stats":
 
-        await query.message.reply_text(
-            "📊 آمار در حال ساخت است."
+async def receipt_photo(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    user_id = update.message.from_user.id
+
+
+    if user_id not in waiting_receipt:
+
+        return
+
+
+
+    order_id = waiting_receipt[user_id]
+
+
+    photo = update.message.photo[-1]
+
+
+    await context.bot.send_photo(
+
+        chat_id=ADMIN_ID,
+
+        photo=photo.file_id,
+
+        caption=(
+            "📥 رسید پرداخت جدید\n\n"
+            f"👤 کاربر: {user_id}\n"
+            f"🆔 سفارش: {order_id}"
         )
+
+    )
+
+
+    await update.message.reply_text(
+        "✅ رسید شما ارسال شد.\n"
+        "⏳ منتظر تأیید مدیر باشید."
+    )
 
 
 
@@ -159,6 +210,14 @@ def main():
     app.add_handler(
         CallbackQueryHandler(
             button
+        )
+    )
+
+
+    app.add_handler(
+        MessageHandler(
+            filters.PHOTO,
+            receipt_photo
         )
     )
 
