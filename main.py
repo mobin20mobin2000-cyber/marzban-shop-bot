@@ -13,15 +13,16 @@ from telegram.ext import (
     filters
 )
 
-from config import BOT_TOKEN, ADMIN_ID
+from config import BOT_TOKEN, ADMIN_ID, MARZBAN_URL
 
 from order import create_order
 
 from payment import get_payment_text
 
+from admin import admin_buttons, create_subscription
 
 
-# ذخیره سفارش فعال هر کاربر
+
 waiting_receipt = {}
 
 
@@ -29,28 +30,24 @@ waiting_receipt = {}
 def user_menu():
 
     keyboard = [
-
         [
             InlineKeyboardButton(
                 "🛒 خرید اشتراک",
                 callback_data="buy"
             )
         ],
-
         [
             InlineKeyboardButton(
                 "📦 سرویس من",
                 callback_data="my_service"
             )
         ],
-
         [
             InlineKeyboardButton(
                 "🆘 پشتیبانی",
                 callback_data="support"
             )
         ]
-
     ]
 
     return InlineKeyboardMarkup(keyboard)
@@ -60,14 +57,12 @@ def user_menu():
 def admin_menu():
 
     keyboard = [
-
         [
             InlineKeyboardButton(
                 "📋 سفارش‌ها",
                 callback_data="orders"
             )
         ]
-
     ]
 
     return InlineKeyboardMarkup(keyboard)
@@ -77,7 +72,6 @@ def admin_menu():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.effective_user.id
-
 
     if user_id == ADMIN_ID:
 
@@ -89,8 +83,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
 
         await update.message.reply_text(
-            "🤖 خوش آمدید\n\n"
-            "یکی از گزینه‌ها را انتخاب کنید:",
+            "🤖 به ربات فروش خوش آمدید\n\n"
+            "انتخاب کنید:",
             reply_markup=user_menu()
         )
 
@@ -101,6 +95,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
 
     await query.answer()
+
 
     user_id = query.from_user.id
 
@@ -139,10 +134,50 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    elif query.data == "orders":
+    elif query.data.startswith("approve_"):
+
+
+        order_id = query.data.replace(
+            "approve_",
+            ""
+        )
+
+
+        result = create_subscription()
+
+
+        if result:
+
+
+            sub_url = (
+                MARZBAN_URL.rstrip("/")
+                +
+                result["subscription"]
+            )
+
+
+            await query.message.reply_text(
+                "✅ پرداخت تأیید شد\n\n"
+                f"👤 کاربر:\n"
+                f"{result['username']}\n\n"
+                "🔗 لینک اشتراک:\n"
+                f"{sub_url}"
+            )
+
+
+        else:
+
+            await query.message.reply_text(
+                "❌ ساخت اشتراک خطا داشت"
+            )
+
+
+
+    elif query.data.startswith("reject_"):
+
 
         await query.message.reply_text(
-            "📋 سفارش‌ها در حال آماده‌سازی است."
+            "❌ پرداخت رد شد"
         )
 
 
@@ -160,7 +195,6 @@ async def receipt_photo(
         return
 
 
-
     order_id = waiting_receipt[user_id]
 
 
@@ -175,21 +209,24 @@ async def receipt_photo(
 
         caption=(
             "📥 رسید پرداخت جدید\n\n"
-            f"👤 کاربر: {user_id}\n"
-            f"🆔 سفارش: {order_id}"
-        )
+            f"👤 کاربر:\n{user_id}\n\n"
+            f"🆔 سفارش:\n{order_id}"
+        ),
+
+        reply_markup=admin_buttons(order_id)
 
     )
 
 
     await update.message.reply_text(
-        "✅ رسید شما ارسال شد.\n"
+        "✅ رسید ارسال شد\n"
         "⏳ منتظر تأیید مدیر باشید."
     )
 
 
 
 def main():
+
 
     app = (
         Application
