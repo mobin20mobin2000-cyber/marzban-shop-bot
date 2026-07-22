@@ -31,7 +31,10 @@ from admin import (
 
 from storage import (
     save_service,
-    get_service
+    get_service,
+    save_order,
+    get_order,
+    delete_order
 )
 
 from admin_panel import admin_panel
@@ -41,9 +44,6 @@ from plans import (
     get_plan
 )
 
-
-
-waiting_receipt = {}
 
 
 
@@ -85,7 +85,7 @@ def user_menu():
 
 
 # =========================
-# منوی پلن ها
+# لیست پلن ها
 # =========================
 
 def plans_keyboard():
@@ -122,7 +122,7 @@ def plans_keyboard():
 
 
 # =========================
-# شروع ربات
+# شروع
 # =========================
 
 async def start(
@@ -135,7 +135,6 @@ async def start(
 
     if user_id == ADMIN_ID:
 
-
         await update.message.reply_text(
 
             "👨‍💼 پنل مدیریت",
@@ -144,9 +143,7 @@ async def start(
 
         )
 
-
     else:
-
 
         await update.message.reply_text(
 
@@ -156,113 +153,20 @@ async def start(
             reply_markup=user_menu()
 
         )
-        # =========================
-# دکمه های ربات
+
+
+
+
+
+# =========================
+# دکمه ها
 # =========================
 
 async def button(
     update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    query = update.callback_query
-
-    await query.answer()
-
-
-    user_id = query.from_user.id
-
-
-
-    # خرید اشتراک
-
-    if query.data == "buy":
-
-
-        await query.message.reply_text(
-
-            "📦 حجم مورد نظر را انتخاب کنید:",
-
-            reply_markup=plans_keyboard()
-
-        )
-
-
-
-    # انتخاب پلن
-
-    elif query.data.startswith("plan_"):
-
-
-        plan_id = query.data.replace(
-            "plan_",
-            ""
-        )
-
-
-        plan = get_plan(plan_id)
-
-
-        if not plan:
-
-
-            await query.message.reply_text(
-
-                "❌ پلن پیدا نشد"
-
-            )
-
-            return
-
-
-
-        order_id = create_order(
-
-            user_id,
-
-            plan["name"]
-
-        )
-
-
-
-        waiting_receipt[user_id] = {
-
-            "order_id": order_id,
-
-            "plan": plan
-
-        }
-
-
-
-        await query.message.reply_text(
-
-            get_payment_text(order_id)
-
-            +
-
-            f"""
-
-📦 پلن انتخابی:
-{plan['name']}
-
-
-💰 مبلغ:
-{plan['price']:,} تومان
-
-
-بعد از پرداخت، عکس رسید را ارسال کنید.
-"""
-
-        )
-
-
-
-
-
-# =========================
-# نمایش سرویس کاربر
+    context:
+    # =========================
+# نمایش سرویس من
 # =========================
 
 async def show_service(
@@ -300,7 +204,7 @@ async def show_service(
 
         await query.message.reply_text(
 
-            "❌ هنوز سرویسی برای شما ساخته نشده."
+            "❌ هنوز سرویسی برای شما ثبت نشده."
 
         )
 
@@ -326,8 +230,13 @@ async def show_support(
         "پیام خود را ارسال کنید."
 
     )
-    # =========================
-# دریافت رسید پرداخت
+
+
+
+
+
+# =========================
+# دریافت رسید
 # =========================
 
 async def receipt_photo(
@@ -338,13 +247,21 @@ async def receipt_photo(
     user_id = update.message.from_user.id
 
 
-    if user_id not in waiting_receipt:
+    order = get_order(user_id)
+
+
+    if not order:
+
+
+        await update.message.reply_text(
+
+            "❌ ابتدا یک سفارش ایجاد کنید."
+
+        )
 
         return
 
 
-
-    data = waiting_receipt[user_id]
 
 
     photo = update.message.photo[-1]
@@ -363,17 +280,20 @@ async def receipt_photo(
 
             f"👤 کاربر:\n{user_id}\n\n"
 
-            f"🆔 سفارش:\n{data['order_id']}\n\n"
+            f"🆔 سفارش:\n{order['order_id']}\n\n"
 
-            f"📦 پلن:\n{data['plan']['name']}"
+            f"📦 پلن:\n{order['plan']['name']}"
 
         ),
 
         reply_markup=admin_buttons(
-            data["order_id"]
+
+            order["order_id"]
+
         )
 
     )
+
 
 
     await update.message.reply_text(
@@ -403,26 +323,20 @@ async def approve_payment(
 
 
     order_id = query.data.replace(
+
         "approve_",
+
         ""
+
     )
 
 
-    customer = None
+
+    order = get_order(order_id)
 
 
 
-    for uid, data in waiting_receipt.items():
-
-        if data["order_id"] == order_id:
-
-            customer = uid
-
-            break
-
-
-
-    if customer is None:
+    if not order:
 
 
         await query.message.reply_text(
@@ -436,7 +350,9 @@ async def approve_payment(
 
 
 
-    plan = waiting_receipt[customer]["plan"]
+    user_id = order["user_id"]
+
+    plan = order["plan"]
 
 
 
@@ -464,7 +380,7 @@ async def approve_payment(
 
     save_service(
 
-        customer,
+        user_id,
 
         result["username"],
 
@@ -474,15 +390,23 @@ async def approve_payment(
 
 
 
+    delete_order(
+
+        order_id
+
+    )
+
+
+
     await context.bot.send_message(
 
-        chat_id=customer,
+        chat_id=user_id,
 
         text=(
 
             "✅ پرداخت تایید شد\n\n"
 
-            f"👤 نام کاربری:\n"
+            f"👤 کاربر:\n"
             f"{result['username']}\n\n"
 
             "🔗 لینک اشتراک:\n"
@@ -494,18 +418,12 @@ async def approve_payment(
     )
 
 
-
     await query.message.reply_text(
 
-        "✅ سرویس ساخته شد و برای مشتری ارسال شد."
+        "✅ سرویس ساخته شد و ارسال گردید."
 
-    )
-
-
-
-
-
-# =========================
+)
+    # =========================
 # رد پرداخت
 # =========================
 
@@ -517,6 +435,22 @@ async def reject_payment(
     query = update.callback_query
 
     await query.answer()
+
+
+    order_id = query.data.replace(
+
+        "reject_",
+
+        ""
+
+    )
+
+
+    delete_order(
+
+        order_id
+
+    )
 
 
     await query.message.reply_text(
@@ -537,76 +471,115 @@ def main():
 
 
     app = Application.builder().token(
+
         BOT_TOKEN
+
     ).build()
 
 
 
     app.add_handler(
+
         CommandHandler(
+
             "start",
+
             start
+
         )
+
     )
 
 
 
     app.add_handler(
+
         CallbackQueryHandler(
+
             button,
+
             pattern="^(buy|plan_)"
+
         )
+
     )
 
 
 
     app.add_handler(
+
         CallbackQueryHandler(
+
             show_service,
+
             pattern="^my_service$"
+
         )
+
     )
 
 
 
     app.add_handler(
+
         CallbackQueryHandler(
+
             show_support,
+
             pattern="^support$"
+
         )
+
     )
 
 
 
     app.add_handler(
+
         CallbackQueryHandler(
+
             approve_payment,
+
             pattern="^approve_"
+
         )
+
     )
 
 
 
     app.add_handler(
+
         CallbackQueryHandler(
+
             reject_payment,
+
             pattern="^reject_"
+
         )
+
     )
 
 
 
     app.add_handler(
+
         MessageHandler(
+
             filters.PHOTO,
+
             receipt_photo
+
         )
+
     )
 
 
 
     print(
+
         "Bot Started ✅"
+
     )
 
 
