@@ -10,15 +10,30 @@ from menus import (
 
 from texts import (
     WELCOME_TEXT,
-    PAYMENT_TEXT
+    PAYMENT_TEXT,
+    SUPPORT_TEXT,
+    WALLET_TEXT,
+    DISCOUNT_TEXT,
+    REFERRAL_TEXT,
+    RENEW_TEXT,
+    MY_SERVICE_TEXT
 )
 
 from plans import get_plan
-
 from order import create_order
 
 from storage import (
-    save_order
+    save_order,
+    get_order,
+    get_order_by_user,
+    delete_order,
+    save_service,
+    get_service
+)
+
+from admin import (
+    admin_buttons,
+    create_subscription
 )
 
 
@@ -33,17 +48,19 @@ async def start(
 
     user_id = update.effective_user.id
 
+    # پنل مدیریت
     if user_id == ADMIN_ID:
 
         from admin_panel import admin_panel
 
         await update.message.reply_text(
-            "👨‍💼 پنل مدیریت",
+            "👨‍💼 پنل مدیریت Zeus Shop VPN",
             reply_markup=admin_panel()
         )
 
         return
 
+    # منوی کاربران
     await update.message.reply_text(
         text=WELCOME_TEXT,
         reply_markup=user_menu()
@@ -51,7 +68,7 @@ async def start(
 
 
 # =========================
-# دکمه های اصلی
+# تابع اصلی دکمه‌ها
 # =========================
 
 async def button(
@@ -66,9 +83,7 @@ async def button(
     user_id = query.from_user.id
 
     data = query.data
-
-
-    # =====================
+        # =====================
     # خرید اشتراک
     # =====================
 
@@ -98,17 +113,18 @@ async def button(
 
         plan = get_plan(plan_id)
 
-        if not plan:
+        if plan is None:
 
             await query.message.reply_text(
 
-                "❌ پلن مورد نظر پیدا نشد."
+                "❌ پلن انتخاب‌شده پیدا نشد."
 
             )
 
             return
 
 
+        # ساخت شناسه سفارش
         order_id = create_order(
 
             user_id,
@@ -118,6 +134,7 @@ async def button(
         )
 
 
+        # ذخیره سفارش
         save_order(
 
             order_id,
@@ -129,6 +146,7 @@ async def button(
         )
 
 
+        # نمایش اطلاعات پرداخت
         await query.message.reply_text(
 
             PAYMENT_TEXT.format(
@@ -140,42 +158,30 @@ async def button(
         )
 
         return
-          # =====================
+            # =====================
     # سرویس‌های من
     # =====================
 
     if data == "my_service":
-
-        from storage import get_service
 
         service = get_service(user_id)
 
         if not service:
 
             await query.message.reply_text(
-
                 "❌ هنوز هیچ سرویس فعالی برای شما ثبت نشده است."
-
             )
-
             return
 
         await query.message.reply_text(
 
-            f"""📦 سرویس‌های من
+            MY_SERVICE_TEXT.format(
 
-━━━━━━━━━━━━━━━━━━
+                username=service["username"],
 
-👤 نام کاربری:
+                subscription=service["subscription"]
 
-{service['username']}
-
-━━━━━━━━━━━━━━━━━━
-
-🔗 لینک اشتراک:
-
-{service['subscription']}
-"""
+            )
 
         )
 
@@ -188,12 +194,8 @@ async def button(
 
     if data == "support":
 
-        from texts import SUPPORT_TEXT
-
         await query.message.reply_text(
-
             SUPPORT_TEXT
-
         )
 
         return
@@ -204,8 +206,6 @@ async def button(
     # =====================
 
     if data == "wallet":
-
-        from texts import WALLET_TEXT
 
         balance = 0
 
@@ -228,8 +228,6 @@ async def button(
 
     if data == "discount":
 
-        from texts import DISCOUNT_TEXT
-
         await query.message.reply_text(
 
             DISCOUNT_TEXT
@@ -245,15 +243,19 @@ async def button(
 
     if data == "referral":
 
-        from texts import REFERRAL_TEXT
+        bot_username = (await context.bot.get_me()).username
 
-        link = f"https://t.me/{context.bot.username}?start={user_id}"
+        referral_link = (
+
+            f"https://t.me/{bot_username}?start={user_id}"
+
+        )
 
         await query.message.reply_text(
 
             REFERRAL_TEXT.format(
 
-                referral_link=link
+                referral_link=referral_link
 
             )
 
@@ -268,40 +270,34 @@ async def button(
 
     if data == "renew":
 
-        from texts import RENEW_TEXT
-
-        service = None
-
-        from storage import get_service
-
         service = get_service(user_id)
 
         if service:
 
-            plan = "اشتراک فعال"
+            plan_name = "اشتراک فعال"
 
-            expire = "در نسخه بعدی"
+            expire_date = "به‌زودی"
 
         else:
 
-            plan = "ندارد"
+            plan_name = "ندارد"
 
-            expire = "-"
+            expire_date = "-"
 
         await query.message.reply_text(
 
             RENEW_TEXT.format(
 
-                plan=plan,
+                plan=plan_name,
 
-                expire_date=expire
+                expire_date=expire_date
 
             )
 
         )
 
         return
-      # =========================
+        # =========================
 # دریافت رسید پرداخت
 # =========================
 
@@ -310,18 +306,15 @@ async def receipt_photo(
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-    from storage import get_order_by_user
-    from admin import admin_buttons
-
     user_id = update.effective_user.id
 
     order = get_order_by_user(user_id)
 
-    if not order:
+    if order is None:
 
         await update.message.reply_text(
 
-            "❌ ابتدا یک سفارش ثبت کنید."
+            "❌ ابتدا یک سفارش ایجاد کنید."
 
         )
 
@@ -359,7 +352,7 @@ async def receipt_photo(
 
     await update.message.reply_text(
 
-        "✅ رسید شما با موفقیت ارسال شد.\n\n"
+        "✅ رسید پرداخت شما با موفقیت ارسال شد.\n\n"
 
         "⏳ لطفاً منتظر تأیید مدیریت باشید."
 
@@ -375,8 +368,180 @@ async def approve_payment(
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-    from storage import (
-        get_order,
-        save_service,
-        delete_order
-  
+    query = update.callback_query
+
+    await query.answer()
+
+    order_id = query.data.replace(
+
+        "approve_",
+
+        ""
+
+    )
+
+    order = get_order(order_id)
+
+    if order is None:
+
+        await query.message.reply_text(
+
+            "❌ سفارش پیدا نشد."
+
+        )
+
+        return
+
+    result = create_subscription(
+
+        order["plan"]["volume"]
+
+    )
+
+    if result is None:
+
+        await query.message.reply_text(
+
+            "❌ ساخت سرویس با خطا مواجه شد."
+
+        )
+
+        return
+
+    save_service(
+
+        order["user_id"],
+
+        result["username"],
+
+        result["subscription"]
+
+    )
+
+    delete_order(order_id)
+
+    await context.bot.send_message(
+
+        chat_id=order["user_id"],
+
+        text=(
+
+            "🎉 پرداخت شما تأیید شد.\n\n"
+
+            f"👤 نام کاربری:\n"
+
+            f"{result['username']}\n\n"
+
+            f"🔗 لینک اشتراک:\n"
+
+            f"{result['subscription']}"
+
+        )
+
+    )
+
+    await query.message.reply_text(
+
+       
+    "✅ سرویس با موفقیت ساخته شد و برای کاربر ارسال گردید."
+
+        )
+    # =========================
+# رد پرداخت
+# =========================
+
+async def reject_payment(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    order_id = query.data.replace(
+        "reject_",
+        ""
+    )
+
+    order = get_order(order_id)
+
+    if order:
+
+        delete_order(order_id)
+
+        await context.bot.send_message(
+
+            chat_id=order["user_id"],
+
+            text=(
+                "❌ پرداخت شما توسط مدیریت رد شد.\n\n"
+                "در صورت نیاز، لطفاً پس از بررسی مجدداً رسید پرداخت را ارسال کنید یا با پشتیبانی تماس بگیرید."
+            )
+
+        )
+
+    await query.message.reply_text(
+
+        "✅ سفارش رد شد."
+
+    )
+
+
+# =========================
+# کانال
+# =========================
+
+async def show_channel(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    await query.message.reply_text(
+
+        "📢 کانال رسمی Zeus Shop VPN\n\n"
+        "https://t.me/YOUR_CHANNEL"
+
+    )
+
+
+# =========================
+# راهنما
+# =========================
+
+async def show_help(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    await query.message.reply_text(
+
+        """ℹ️ راهنمای استفاده
+
+1️⃣ خرید اشتراک را انتخاب کنید.
+
+2️⃣ پلن مورد نظر را انتخاب کنید.
+
+3️⃣ مبلغ را کارت‌به‌کارت واریز کنید.
+
+4️⃣ تصویر رسید را ارسال نمایید.
+
+5️⃣ پس از تأیید مدیریت، سرویس به صورت خودکار برای شما ارسال خواهد شد.
+
+🛠 در صورت بروز هرگونه مشکل، از بخش «پشتیبانی» با ما در ارتباط باشید.
+"""
+
+    )
+
+
+# =========================
+# پایان فایل handlers.py
+# =========================
