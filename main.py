@@ -21,47 +21,41 @@ from payment import get_payment_text
 
 from admin import admin_buttons, create_subscription
 
+from storage import save_service, get_service
 
-# نگهداری سفارش‌های در انتظار
+from admin_panel import admin_panel
+
+
+
 waiting_receipt = {}
+
 
 
 def user_menu():
 
     keyboard = [
+
         [
             InlineKeyboardButton(
                 "🛒 خرید اشتراک",
                 callback_data="buy"
             )
         ],
+
         [
             InlineKeyboardButton(
                 "📦 سرویس من",
                 callback_data="my_service"
             )
         ],
+
         [
             InlineKeyboardButton(
                 "🆘 پشتیبانی",
                 callback_data="support"
             )
         ]
-    ]
 
-    return InlineKeyboardMarkup(keyboard)
-
-
-
-def admin_menu():
-
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "📋 سفارش‌ها",
-                callback_data="orders"
-            )
-        ]
     ]
 
     return InlineKeyboardMarkup(keyboard)
@@ -76,17 +70,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id == ADMIN_ID:
 
         await update.message.reply_text(
+
             "👨‍💼 پنل مدیریت",
-            reply_markup=admin_menu()
+
+            reply_markup=admin_panel()
+
         )
 
     else:
 
         await update.message.reply_text(
+
             "🤖 ربات فروش اشتراک\n\n"
-            "یک گزینه را انتخاب کنید:",
+            "انتخاب کنید:",
+
             reply_markup=user_menu()
+
         )
+
 
 
 
@@ -95,6 +96,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
 
     await query.answer()
+
 
     user_id = query.from_user.id
 
@@ -106,8 +108,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
         order_id = create_order(
+
             user_id,
+
             "30 روزه"
+
         )
 
 
@@ -115,7 +120,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
         await query.message.reply_text(
+
             get_payment_text(order_id)
+
         )
 
 
@@ -125,9 +132,34 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "my_service":
 
 
-        await query.message.reply_text(
-            "📦 هنوز سرویسی برای شما ثبت نشده است."
-        )
+        service = get_service(user_id)
+
+
+        if service:
+
+
+            await query.message.reply_text(
+
+                "📦 سرویس شما:\n\n"
+
+                f"👤 کاربر:\n"
+                f"{service['username']}\n\n"
+
+                "🔗 لینک اشتراک:\n"
+
+                f"{service['subscription']}"
+
+            )
+
+
+        else:
+
+
+            await query.message.reply_text(
+
+                "❌ هنوز سرویسی ندارید."
+
+            )
 
 
 
@@ -137,7 +169,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
         await query.message.reply_text(
+
             "🆘 پشتیبانی"
+
         )
 
 
@@ -148,8 +182,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
         order_id = query.data.replace(
+
             "approve_",
+
             ""
+
         )
 
 
@@ -166,31 +203,31 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-        if customer_id is None:
-
-
-            await query.message.reply_text(
-                "❌ کاربر سفارش پیدا نشد"
-            )
-
-            return
-
-
-
         result = create_subscription()
 
 
 
-        if result:
+        if result and customer_id:
 
 
-            sub_url = (
+            sub = (
 
                 MARZBAN_URL.rstrip("/")
 
                 +
 
                 result["subscription"]
+
+            )
+
+
+            save_service(
+
+                customer_id,
+
+                result["username"],
+
+                sub
 
             )
 
@@ -202,27 +239,20 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 text=(
 
-                    "✅ پرداخت شما تأیید شد\n\n"
+                    "✅ پرداخت تأیید شد\n\n"
 
-                    f"👤 نام کاربر:\n"
+                    "🔗 لینک اشتراک شما:\n"
 
-                    f"{result['username']}\n\n"
-
-                    "🔗 لینک سابسکریپشن:\n"
-
-                    f"{sub_url}"
+                    f"{sub}"
 
                 )
 
             )
 
 
-
             await query.message.reply_text(
 
-                "✅ پرداخت تأیید شد\n"
-
-                "📩 لینک برای مشتری ارسال شد."
+                "✅ ساخته شد و برای مشتری ارسال شد."
 
             )
 
@@ -232,13 +262,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await query.message.reply_text(
 
-                "❌ ساخت اشتراک ناموفق بود"
+                "❌ خطا در ساخت سرویس"
 
             )
 
 
-
-    # رد پرداخت
 
     elif query.data.startswith("reject_"):
 
@@ -252,10 +280,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-async def receipt_photo(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+
+async def receipt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
 
     user_id = update.message.from_user.id
 
@@ -281,11 +308,11 @@ async def receipt_photo(
 
         caption=(
 
-            "📥 رسید پرداخت جدید\n\n"
+            "📥 رسید پرداخت\n\n"
 
-            f"👤 کاربر:\n{user_id}\n\n"
+            f"👤 کاربر: {user_id}\n"
 
-            f"🆔 سفارش:\n{order_id}"
+            f"🆔 سفارش: {order_id}"
 
         ),
 
@@ -299,9 +326,10 @@ async def receipt_photo(
 
         "✅ رسید ارسال شد\n"
 
-        "⏳ منتظر تأیید مدیر باشید."
+        "⏳ منتظر تأیید باشید."
 
     )
+
 
 
 
@@ -336,7 +364,6 @@ def main():
     )
 
 
-
     app.add_handler(
 
         CallbackQueryHandler(
@@ -346,7 +373,6 @@ def main():
         )
 
     )
-
 
 
     app.add_handler(
@@ -362,7 +388,6 @@ def main():
     )
 
 
-
     print(
 
         "Bot Started ✅"
@@ -371,6 +396,7 @@ def main():
 
 
     app.run_polling()
+
 
 
 
