@@ -171,8 +171,94 @@ async def start(
 
 async def button(
     update: Update,
-    context:
-    # =========================
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+    user_id = query.from_user.id
+
+
+
+    if query.data == "buy":
+
+
+        await query.message.reply_text(
+
+            "📦 حجم مورد نظر را انتخاب کنید:",
+
+            reply_markup=plans_keyboard()
+
+        )
+
+
+
+    elif query.data.startswith("plan_"):
+
+
+        plan_id = query.data.replace(
+            "plan_",
+            ""
+        )
+
+
+        plan = get_plan(plan_id)
+
+
+        if not plan:
+
+            await query.message.reply_text(
+                "❌ پلن پیدا نشد"
+            )
+
+            return
+
+
+
+        order_id = create_order(
+
+            user_id,
+
+            plan["name"]
+
+        )
+
+
+        save_order(
+
+            order_id,
+
+            user_id,
+
+            plan
+
+        )
+
+
+        await query.message.reply_text(
+
+            get_payment_text(order_id)
+
+            +
+
+            f"""
+
+📦 پلن:
+{plan['name']}
+
+
+💰 مبلغ:
+{plan['price']:,} تومان
+
+
+بعد از پرداخت عکس رسید را ارسال کنید.
+"""
+
+    )
+        # =========================
 # نمایش سرویس من
 # =========================
 
@@ -426,8 +512,10 @@ async def approve_payment(
 
     await query.message.reply_text(
 
-        "✅ سرویس ساخته شد
-      # =========================
+        "✅ سرویس ساخته شد و برای مشتری ارسال شد."
+
+    )
+    # =========================
 # رد پرداخت
 # =========================
 
@@ -596,4 +684,4 @@ def main():
 
 if __name__ == "__main__":
 
-    main()  
+    main()
