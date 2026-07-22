@@ -4,7 +4,6 @@ from telegram import (
     InlineKeyboardMarkup
 )
 
-
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -157,13 +156,8 @@ async def start(
             reply_markup=user_menu()
 
         )
-
-
-
-
-
-# =========================
-# دکمه ها
+        # =========================
+# دکمه های ربات
 # =========================
 
 async def button(
@@ -180,6 +174,8 @@ async def button(
 
 
 
+    # خرید اشتراک
+
     if query.data == "buy":
 
 
@@ -192,6 +188,8 @@ async def button(
         )
 
 
+
+    # انتخاب پلن
 
     elif query.data.startswith("plan_"):
 
@@ -207,8 +205,11 @@ async def button(
 
         if not plan:
 
+
             await query.message.reply_text(
+
                 "❌ پلن پیدا نشد"
+
             )
 
             return
@@ -243,9 +244,7 @@ async def button(
 
             f"""
 
-
-
-📦 پلن:
+📦 پلن انتخابی:
 {plan['name']}
 
 
@@ -253,12 +252,17 @@ async def button(
 {plan['price']:,} تومان
 
 
-بعد از پرداخت عکس رسید را ارسال کنید.
+بعد از پرداخت، عکس رسید را ارسال کنید.
 """
 
         )
-        # =========================
-# سرویس من
+
+
+
+
+
+# =========================
+# نمایش سرویس کاربر
 # =========================
 
 async def show_service(
@@ -281,7 +285,8 @@ async def show_service(
 
             "📦 سرویس شما:\n\n"
 
-            f"👤 کاربر:\n{service['username']}\n\n"
+            f"👤 نام کاربری:\n"
+            f"{service['username']}\n\n"
 
             "🔗 لینک اشتراک:\n"
 
@@ -295,7 +300,7 @@ async def show_service(
 
         await query.message.reply_text(
 
-            "❌ سرویسی برای شما ثبت نشده."
+            "❌ هنوز سرویسی برای شما ساخته نشده."
 
         )
 
@@ -321,13 +326,8 @@ async def show_support(
         "پیام خود را ارسال کنید."
 
     )
-
-
-
-
-
-# =========================
-# دریافت رسید
+    # =========================
+# دریافت رسید پرداخت
 # =========================
 
 async def receipt_photo(
@@ -361,11 +361,11 @@ async def receipt_photo(
 
             "📥 رسید پرداخت جدید\n\n"
 
-            f"👤 کاربر: {user_id}\n"
+            f"👤 کاربر:\n{user_id}\n\n"
 
-            f"🆔 سفارش: {data['order_id']}\n"
+            f"🆔 سفارش:\n{data['order_id']}\n\n"
 
-            f"📦 پلن: {data['plan']['name']}"
+            f"📦 پلن:\n{data['plan']['name']}"
 
         ),
 
@@ -411,6 +411,7 @@ async def approve_payment(
     customer = None
 
 
+
     for uid, data in waiting_receipt.items():
 
         if data["order_id"] == order_id:
@@ -421,7 +422,7 @@ async def approve_payment(
 
 
 
-    if not customer:
+    if customer is None:
 
 
         await query.message.reply_text(
@@ -535,66 +536,87 @@ async def reject_payment(
 def main():
 
 
-    app = (
-
-        Application
-
-        .builder()
-
-        .token(BOT_TOKEN)
-
-        .build()
-
-    )
+    app = Application.builder().token(
+        BOT_TOKEN
+    ).build()
 
 
 
     app.add_handler(
-
         CommandHandler(
-
             "start",
-
             start
-
         )
-
     )
 
 
 
     app.add_handler(
-
         CallbackQueryHandler(
-
             button,
-
             pattern="^(buy|plan_)"
-
         )
-
     )
 
 
 
     app.add_handler(
-
         CallbackQueryHandler(
-
             show_service,
-
             pattern="^my_service$"
-
         )
-
     )
 
 
 
     app.add_handler(
-
         CallbackQueryHandler(
-
             show_support,
+            pattern="^support$"
+        )
+    )
 
-           
+
+
+    app.add_handler(
+        CallbackQueryHandler(
+            approve_payment,
+            pattern="^approve_"
+        )
+    )
+
+
+
+    app.add_handler(
+        CallbackQueryHandler(
+            reject_payment,
+            pattern="^reject_"
+        )
+    )
+
+
+
+    app.add_handler(
+        MessageHandler(
+            filters.PHOTO,
+            receipt_photo
+        )
+    )
+
+
+
+    print(
+        "Bot Started ✅"
+    )
+
+
+
+    app.run_polling()
+
+
+
+
+
+if __name__ == "__main__":
+
+    main()
