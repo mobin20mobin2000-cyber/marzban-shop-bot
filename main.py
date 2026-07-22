@@ -1,129 +1,173 @@
-from telegram import Update
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup
+)
+
 from telegram.ext import (
     Application,
     CommandHandler,
+    CallbackQueryHandler,
     ContextTypes
 )
 
-from config import BOT_TOKEN, MARZBAN_URL
-from marzban import Marzban
+from config import BOT_TOKEN, ADMIN_ID
+
+from order import create_order
 
 
+# =====================
+# منوی کاربر
+# =====================
+
+def user_menu():
+
+    keyboard = [
+
+        [
+            InlineKeyboardButton(
+                "🛒 خرید اشتراک",
+                callback_data="buy"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "📦 سرویس من",
+                callback_data="my_service"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "🆘 پشتیبانی",
+                callback_data="support"
+            )
+        ]
+
+    ]
+
+    return InlineKeyboardMarkup(keyboard)
+
+
+
+# =====================
+# منوی مدیر
+# =====================
+
+def admin_menu():
+
+    keyboard = [
+
+        [
+            InlineKeyboardButton(
+                "📋 سفارش‌ها",
+                callback_data="orders"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "📊 آمار",
+                callback_data="stats"
+            )
+        ]
+
+    ]
+
+    return InlineKeyboardMarkup(keyboard)
+
+
+
+# =====================
+# شروع ربات
+# =====================
 
 async def start(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-    await update.message.reply_text(
-        "🤖 ربات فروش Marzban فعال شد\n\n"
-        "🛒 سیستم فروش اشتراک آماده است."
-    )
+    user_id = update.effective_user.id
 
 
-
-async def test_user(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    await update.message.reply_text(
-        "⏳ در حال ساخت اشتراک..."
-    )
-
-
-    marzban = Marzban()
-
-
-    result = marzban.create_user(
-        username=None,
-        days=30
-    )
-
-
-    if result:
-
-        username = result.get(
-            "username"
-        )
-
-
-        sub_path = result.get(
-            "subscription_url"
-        )
-
-
-        sub_url = (
-            MARZBAN_URL.rstrip("/")
-            +
-            sub_path
-        )
-
+    if user_id == ADMIN_ID:
 
         await update.message.reply_text(
-            "✅ اشتراک شما آماده شد\n\n"
-            f"👤 کاربر:\n"
-            f"{username}\n\n"
-            "📅 مدت: ۳۰ روز\n\n"
-            "🔗 لینک سابسکریپشن:\n"
-            f"{sub_url}"
+            "👨‍💼 پنل مدیریت",
+            reply_markup=admin_menu()
         )
-
 
     else:
 
         await update.message.reply_text(
-            "❌ ساخت اشتراک ناموفق بود"
+            "🤖 به ربات فروش خوش آمدید\n\n"
+            "یکی از گزینه‌ها را انتخاب کنید:",
+            reply_markup=user_menu()
         )
 
 
 
-def main():
+# =====================
+# دکمه ها
+# =====================
 
-    print(
-        "Testing Marzban..."
-    )
+async def button(
 
+    update: Update,
 
-    marzban = Marzban()
+    context: ContextTypes.DEFAULT_TYPE
 
-    marzban.test()
+):
 
+    query = update.callback_query
 
-
-    app = (
-        Application
-        .builder()
-        .token(BOT_TOKEN)
-        .build()
-    )
+    await query.answer()
 
 
-    app.add_handler(
-        CommandHandler(
-            "start",
-            start
+    user_id = query.from_user.id
+
+
+
+    # خرید
+
+    if query.data == "buy":
+
+
+        order_id = create_order(
+            user_id,
+            "30 روزه"
         )
-    )
 
 
-    app.add_handler(
-        CommandHandler(
-            "testuser",
-            test_user
+        await query.message.reply_text(
+
+            "🛒 سفارش شما ساخته شد\n\n"
+
+            "📦 پلن: ۳۰ روزه\n"
+
+            f"🆔 شماره سفارش:\n{order_id}\n\n"
+
+            "💳 لطفاً مبلغ را کارت‌به‌کارت کنید."
+
         )
-    )
 
 
-    print(
-        "Bot Started ✅"
-    )
+    elif query.data == "support":
 
 
-    app.run_polling()
+        await query.message.reply_text(
+            "🆘 پشتیبانی:\n"
+            "به زودی فعال می‌شود."
+        )
 
 
+    elif query.data == "my_service":
 
-if __name__ == "__main__":
 
-    main()
+        await query.message.reply_text(
+            "📦 هنوز سرویسی برای شما ثبت نشده است."
+        )
+
+
+    elif query.data == "orders
