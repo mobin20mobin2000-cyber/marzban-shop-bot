@@ -90,6 +90,7 @@ def user_menu():
 
     ]
 
+
     return InlineKeyboardMarkup(
         keyboard
     )
@@ -187,10 +188,11 @@ async def button(
 
 
 
+    # =====================
     # خرید اشتراک
+    # =====================
 
     if data == "buy":
-
 
         await query.message.reply_text(
 
@@ -204,7 +206,9 @@ async def button(
 
 
 
+    # =====================
     # انتخاب پلن
+    # =====================
 
     if data.startswith("plan_"):
 
@@ -313,15 +317,15 @@ async def show_service(
     user_id = query.from_user.id
 
 
-
     service = get_subscription(
+
         user_id
+
     )
 
 
 
     if service is None:
-
 
         await query.message.reply_text(
 
@@ -399,8 +403,8 @@ async def receipt_photo(
     )
 
 
-    if order is None:
 
+    if order is None:
 
         await update.message.reply_text(
 
@@ -462,7 +466,9 @@ async def receipt_photo(
 
 
         reply_markup=admin_buttons(
+
             user_id
+
         )
 
     )
@@ -519,13 +525,14 @@ async def approve_payment(
 
 
     order = last_order(
+
         user_id
+
     )
 
 
 
     if order is None:
-
 
         await query.message.reply_text(
 
@@ -534,6 +541,7 @@ async def approve_payment(
         )
 
         return
+
 
 
 
@@ -549,7 +557,6 @@ async def approve_payment(
 
     if result is None:
 
-
         await query.message.reply_text(
 
             "❌ خطا در ساخت سرویس مرزبان."
@@ -557,6 +564,7 @@ async def approve_payment(
         )
 
         return
+
 
 
 
@@ -578,6 +586,7 @@ async def approve_payment(
 
 
 
+
     # تایید سفارش
 
     db_approve_payment(
@@ -585,6 +594,7 @@ async def approve_payment(
         order["id"]
 
     )
+
 
 
 
@@ -662,7 +672,9 @@ async def reject_payment(
 
 
     order = last_order(
+
         user_id
+
     )
 
 
