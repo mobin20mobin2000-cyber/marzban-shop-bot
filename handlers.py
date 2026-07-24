@@ -1,177 +1,13 @@
 # =========================
-# handlers.py
-# Zeus Shop VPN
-# =========================
-
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup
-)
-
-from telegram.ext import (
-    ContextTypes
-)
-
-from config import ADMIN_ID
-
-from texts import (
-    WELCOME_TEXT,
-    SUPPORT_TEXT
-)
-
-from plans import (
-    PLANS,
-    get_plan
-)
-
-from payment import (
-    get_payment_text
-)
-
-from database import (
-    add_user,
-    create_order,
-    last_order,
-    save_subscription,
-    get_subscription,
-    approve_payment as db_approve_payment,
-    reject_payment as db_reject_payment
-)
-
-from admin import (
-    admin_panel,
-    admin_buttons,
-    create_subscription
-)
-
-
-# =========================
-# منوی کاربر
-# =========================
-
-def user_menu():
-
-    keyboard = [
-
-        [
-            InlineKeyboardButton(
-                "🛒 خرید اشتراک",
-                callback_data="buy"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "📦 سرویس من",
-                callback_data="my_service"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "💬 پشتیبانی",
-                callback_data="support"
-            )
-        ]
-
-    ]
-
-    return InlineKeyboardMarkup(keyboard)
-
-
-
-# =========================
-# منوی پلن‌ها
-# =========================
-
-def plans_keyboard():
-
-    keyboard = []
-
-    for key, plan in PLANS.items():
-
-        keyboard.append(
-
-            [
-                InlineKeyboardButton(
-
-                    f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
-
-                    callback_data=f"plan_{key}"
-
-                )
-            ]
-
-        )
-
-    return InlineKeyboardMarkup(keyboard)
-    # =========================
-# شروع ربات
-# =========================
-
-async def start(
-
-    update: Update,
-
-    context: ContextTypes.DEFAULT_TYPE
-
-):
-
-    user = update.effective_user
-
-
-    add_user(
-
-        user.id,
-
-        user.username
-
-    )
-
-
-    # پنل ادمین
-
-    if user.id == ADMIN_ID:
-
-        await update.message.reply_text(
-
-            "👑 پنل مدیریت Zeus Shop VPN",
-
-            reply_markup=admin_panel()
-
-        )
-
-        return
-
-
-
-    # منوی کاربر
-
-    await update.message.reply_text(
-
-        WELCOME_TEXT,
-
-        reply_markup=user_menu()
-
-    )
-
-
-
-# =========================
 # مدیریت دکمه‌ها
 # =========================
 
 async def button(
-
     update: Update,
-
     context: ContextTypes.DEFAULT_TYPE
-
 ):
 
     query = update.callback_query
-
 
     await query.answer()
 
@@ -182,13 +18,16 @@ async def button(
 
 
 
+    # =====================
     # خرید اشتراک
+    # =====================
 
     if data == "buy":
 
+
         await query.message.reply_text(
 
-            "📦 پلن مورد نظر را انتخاب کنید:",
+            "📦 لطفاً پلن مورد نظر را انتخاب کنید:",
 
             reply_markup=plans_keyboard()
 
@@ -198,17 +37,16 @@ async def button(
 
 
 
+    # =====================
     # انتخاب پلن
+    # =====================
 
     if data.startswith("plan_"):
 
 
         plan_id = data.replace(
-
             "plan_",
-
             ""
-
         )
 
 
@@ -252,9 +90,9 @@ async def button(
 
             f"""
 
+━━━━━━━━━━━━━━
 
-
-📦 پلن:
+📦 پلن انتخابی:
 
 {plan['name']}
 
@@ -279,27 +117,29 @@ async def button(
 {order_id}
 
 
-📸 بعد از پرداخت، تصویر رسید را ارسال کنید.
+━━━━━━━━━━━━━━
+
+
+📸 بعد از پرداخت، عکس رسید را ارسال کنید.
 
 """
 
         )
 
         return
-        # =========================
+
+
+
+# =========================
 # نمایش سرویس من
 # =========================
 
 async def show_service(
-
     update: Update,
-
     context: ContextTypes.DEFAULT_TYPE
-
 ):
 
     query = update.callback_query
-
 
     await query.answer()
 
@@ -334,7 +174,7 @@ f"""
 
 ━━━━━━━━━━━━━━
 
-👤 نام کاربری:
+👤 نام کاربری مرزبان:
 
 {service["marzban_username"]}
 
@@ -360,15 +200,11 @@ f"""
 # =========================
 
 async def show_support(
-
     update: Update,
-
     context: ContextTypes.DEFAULT_TYPE
-
 ):
 
     query = update.callback_query
-
 
     await query.answer()
 
@@ -378,22 +214,238 @@ async def show_support(
         SUPPORT_TEXT
 
     )
+    # =========================
+# مدیریت دکمه‌ها
+# =========================
+
+async def button(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+    user_id = query.from_user.id
+
+    data = query.data
+
+
+
+    # =====================
+    # خرید اشتراک
+    # =====================
+
+    if data == "buy":
+
+
+        await query.message.reply_text(
+
+            "📦 لطفاً پلن مورد نظر را انتخاب کنید:",
+
+            reply_markup=plans_keyboard()
+
+        )
+
+        return
+
+
+
+    # =====================
+    # انتخاب پلن
+    # =====================
+
+    if data.startswith("plan_"):
+
+
+        plan_id = data.replace(
+            "plan_",
+            ""
+        )
+
+
+        plan = get_plan(plan_id)
+
+
+
+        if plan is None:
+
+
+            await query.message.reply_text(
+
+                "❌ پلن پیدا نشد."
+
+            )
+
+            return
+
+
+
+        order_id = create_order(
+
+            user_id,
+
+            plan["name"],
+
+            plan["volume"],
+
+            plan["days"],
+
+            plan["price"]
+
+        )
+
+
+
+        await query.message.reply_text(
+
+            get_payment_text(order_id)
+
+            +
+
+            f"""
+
+
+
+📦 پلن انتخابی:
+
+{plan['name']}
+
+
+💾 حجم:
+
+{plan['volume']} گیگ
+
+
+⏳ مدت:
+
+{plan['days']} روز
+
+
+💰 مبلغ:
+
+{plan['price']:,} تومان
+
+
+🧾 شماره سفارش:
+
+{order_id}
+
+
+
+بعد از پرداخت، عکس رسید را ارسال کنید.
+
+"""
+
+        )
+
+        return
+
 
 
 
 # =========================
+# نمایش سرویس من
+# =========================
+
+async def show_service(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+    user_id = query.from_user.id
+
+
+
+    service = get_subscription(
+
+        user_id
+
+    )
+
+
+
+    if service is None:
+
+
+        await query.message.reply_text(
+
+            "❌ هنوز سرویس فعالی ندارید."
+
+        )
+
+        return
+
+
+
+    await query.message.reply_text(
+
+f"""
+🔐 سرویس من
+
+━━━━━━━━━━━━━━
+
+👤 نام کاربری:
+
+{service["marzban_username"]}
+
+
+🔗 لینک اشتراک:
+
+{service["subscription_url"]}
+
+
+📅 انقضا:
+
+{service["expire_date"] or "نامشخص"}
+
+━━━━━━━━━━━━━━
+"""
+
+    )
+
+
+
+
+
+# =========================
+# پشتیبانی
+# =========================
+
+async def show_support(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+
+    await query.message.reply_text(
+
+        SUPPORT_TEXT
+
+    )
+    # =========================
 # دریافت رسید پرداخت
 # =========================
 
 async def receipt_photo(
-
     update: Update,
-
     context: ContextTypes.DEFAULT_TYPE
-
 ):
 
     user_id = update.effective_user.id
+
 
 
     order = last_order(
@@ -403,12 +455,13 @@ async def receipt_photo(
     )
 
 
+
     if order is None:
 
 
         await update.message.reply_text(
 
-            "❌ ابتدا سفارش ثبت کنید."
+            "❌ ابتدا یک سفارش ثبت کنید."
 
         )
 
@@ -430,22 +483,40 @@ async def receipt_photo(
         caption=f"""
 📥 رسید پرداخت جدید
 
+━━━━━━━━━━━━━━
 
 👤 کاربر:
+
 {user_id}
 
 
 🧾 شماره سفارش:
+
 {order["id"]}
 
 
 📦 پلن:
+
 {order["plan"]}
 
 
+💾 حجم:
+
+{order["volume"]} گیگ
+
+
+⏳ مدت:
+
+{order["days"]} روز
+
+
 💰 مبلغ:
+
 {order["price"]:,} تومان
+
+━━━━━━━━━━━━━━
 """,
+
 
         reply_markup=admin_buttons(
 
@@ -456,29 +527,26 @@ async def receipt_photo(
     )
 
 
+
     await update.message.reply_text(
 
-        """
+"""
 ✅ رسید شما دریافت شد.
 
-⏳ پس از بررسی مدیریت، سرویس ساخته می‌شود.
+⏳ منتظر تایید مدیریت باشید.
 """
 
-)
+    )
     # =========================
 # تایید پرداخت
 # =========================
 
 async def approve_payment(
-
     update: Update,
-
     context: ContextTypes.DEFAULT_TYPE
-
 ):
 
     query = update.callback_query
-
 
     await query.answer()
 
@@ -511,6 +579,7 @@ async def approve_payment(
     )
 
 
+
     if order is None:
 
 
@@ -533,6 +602,7 @@ async def approve_payment(
     )
 
 
+
     if result is None:
 
 
@@ -546,7 +616,7 @@ async def approve_payment(
 
 
 
-    # ذخیره سرویس
+    # ذخیره اشتراک
 
     save_subscription(
 
@@ -583,6 +653,7 @@ async def approve_payment(
         text=f"""
 🎉 پرداخت شما تایید شد.
 
+━━━━━━━━━━━━━━
 
 📦 سرویس شما آماده است.
 
@@ -595,9 +666,15 @@ async def approve_payment(
 🔗 لینک اشتراک:
 
 {result["subscription"]}
+
+
+━━━━━━━━━━━━━━
+
+با تشکر از خرید شما ❤️
 """
 
     )
+
 
 
     await query.message.reply_text(
@@ -608,20 +685,18 @@ async def approve_payment(
 
 
 
+
+
 # =========================
 # رد پرداخت
 # =========================
 
 async def reject_payment(
-
     update: Update,
-
     context: ContextTypes.DEFAULT_TYPE
-
 ):
 
     query = update.callback_query
-
 
     await query.answer()
 
@@ -654,6 +729,7 @@ async def reject_payment(
     )
 
 
+
     if order:
 
 
@@ -671,10 +747,11 @@ async def reject_payment(
             text="""
 ❌ پرداخت شما رد شد.
 
-در صورت نیاز دوباره رسید ارسال کنید.
+در صورت اشتباه بودن، دوباره رسید ارسال کنید.
 """
 
         )
+
 
 
     await query.message.reply_text(
@@ -682,6 +759,8 @@ async def reject_payment(
         "✅ پرداخت رد شد."
 
     )
+
+
 
 
 
@@ -705,6 +784,7 @@ def register_handlers(app):
     )
 
 
+
     app.add_handler(
 
         CommandHandler(
@@ -716,6 +796,7 @@ def register_handlers(app):
         )
 
     )
+
 
 
     app.add_handler(
@@ -731,6 +812,7 @@ def register_handlers(app):
     )
 
 
+
     app.add_handler(
 
         CallbackQueryHandler(
@@ -742,6 +824,7 @@ def register_handlers(app):
         )
 
     )
+
 
 
     app.add_handler(
@@ -757,6 +840,7 @@ def register_handlers(app):
     )
 
 
+
     app.add_handler(
 
         CallbackQueryHandler(
@@ -768,6 +852,7 @@ def register_handlers(app):
         )
 
     )
+
 
 
     app.add_handler(
@@ -782,6 +867,9 @@ def register_handlers(app):
 
     )
 
+
+
+    # دریافت عکس رسید
 
     app.add_handler(
 
