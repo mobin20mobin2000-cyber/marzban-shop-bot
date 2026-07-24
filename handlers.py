@@ -1,6 +1,7 @@
 # =========================
 # handlers.py
 # Zeus Shop VPN
+# Part 1/3
 # =========================
 
 
@@ -16,7 +17,10 @@ from telegram.ext import (
 )
 
 
-from config import ADMIN_ID
+from config import (
+    ADMIN_ID,
+    ADMIN_IDS
+)
 
 
 from texts import (
@@ -33,7 +37,9 @@ from plans import (
 )
 
 
-from order import create_order
+from order import (
+    create_order
+)
 
 
 from storage import (
@@ -108,7 +114,10 @@ def plans_keyboard():
 
                 InlineKeyboardButton(
 
-                    text=f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
+                    text=(
+                        f"📦 {plan['name']} | "
+                        f"💰 {plan['price']:,} تومان"
+                    ),
 
                     callback_data=f"plan_{key}"
 
@@ -122,7 +131,10 @@ def plans_keyboard():
     return InlineKeyboardMarkup(
         keyboard
     )
-    # =========================
+
+
+
+# =========================
 # شروع ربات
 # =========================
 
@@ -134,22 +146,29 @@ async def start(
     user_id = update.effective_user.id
 
 
-    if user_id == ADMIN_ID:
+
+    # ادمین
+
+    if user_id in ADMIN_IDS:
+
 
         from admin_panel import admin_panel
 
 
         await update.message.reply_text(
 
-            "👨‍💼 پنل مدیریت Zeus Shop VPN",
+            "👑 پنل مدیریت Zeus Shop VPN",
 
             reply_markup=admin_panel()
 
         )
 
+
         return
 
 
+
+    # کاربر عادی
 
     await update.message.reply_text(
 
@@ -158,7 +177,6 @@ async def start(
         reply_markup=user_menu()
 
     )
-
 
 
 
@@ -185,6 +203,42 @@ async def button(
 
 
 
+    # =====================
+    # پنل مدیریت
+    # =====================
+
+    if data == "admin_panel":
+
+
+        if user_id not in ADMIN_IDS:
+
+            await query.answer(
+
+                "⛔ دسترسی ندارید",
+
+                show_alert=True
+
+            )
+
+            return
+
+
+
+        from admin_panel import admin_panel
+
+
+        await query.message.reply_text(
+
+            "👑 پنل مدیریت Zeus Shop VPN",
+
+            reply_markup=admin_panel()
+
+        )
+
+
+        return
+
+
 
     # =====================
     # خرید اشتراک
@@ -203,7 +257,6 @@ async def button(
 
 
         return
-
 
 
 
@@ -240,9 +293,6 @@ async def button(
 
 
 
-
-        # ایجاد سفارش
-
         order_id = create_order(
 
             user_id,
@@ -253,9 +303,6 @@ async def button(
 
 
 
-
-        # ذخیره سفارش
-
         save_order(
 
             order_id,
@@ -265,7 +312,6 @@ async def button(
             plan
 
         )
-
 
 
 
@@ -324,7 +370,6 @@ async def show_service(
     await query.answer()
 
 
-
     user_id = query.from_user.id
 
 
@@ -345,6 +390,7 @@ async def show_service(
             "❌ هنوز سرویس فعالی ندارید."
 
         )
+
 
         return
 
@@ -394,7 +440,7 @@ async def show_support(
 
 
 # =========================
-# دریافت رسید پرداخت
+# دریافت عکس رسید پرداخت
 # =========================
 
 async def receipt_photo(
@@ -402,11 +448,10 @@ async def receipt_photo(
     context: ContextTypes.DEFAULT_TYPE
 ):
 
+
     user_id = update.effective_user.id
 
 
-
-    # پیدا کردن آخرین سفارش کاربر
 
     order = get_order_by_user(
 
@@ -424,6 +469,7 @@ async def receipt_photo(
             "❌ ابتدا یک سفارش ایجاد کنید."
 
         )
+
 
         return
 
@@ -477,8 +523,8 @@ async def receipt_photo(
         "✅ رسید پرداخت شما ارسال شد.\n\n"
         "⏳ منتظر تایید مدیریت باشید."
 
-            )
-    # =========================
+    )
+# =========================
 # تایید پرداخت توسط ادمین
 # =========================
 
@@ -488,138 +534,60 @@ async def approve_payment(
 ):
 
     query = update.callback_query
-
-
     await query.answer()
 
+    order_id = query.data.replace("approve_", "")
 
-
-    order_id = query.data.replace(
-
-        "approve_",
-
-        ""
-
-    )
-
-
-
-    order = get_order(
-
-        order_id
-
-    )
-
-
+    order = get_order(order_id)
 
     if order is None:
 
-
         await query.message.reply_text(
-
             "❌ سفارش پیدا نشد."
-
         )
 
         return
 
-
-
-
     user_id = order["user_id"]
-
     plan = order["plan"]
 
-
-
-
-    # ساخت اشتراک
-
+    # ساخت اشتراک در مرزبان
     result = create_subscription(
-
         plan["volume"]
-
     )
-
-
 
     if result is None:
 
-
         await query.message.reply_text(
-
             "❌ خطا در ساخت سرویس."
-
         )
 
         return
 
-
-
-
-
     # ذخیره سرویس
-
     save_service(
-
         user_id,
-
         result["username"],
-
         result["subscription"]
-
     )
-
-
-
-
 
     # حذف سفارش
+    delete_order(order_id)
 
-    delete_order(
-
-        order_id
-
-    )
-
-
-
-
-
-    # ارسال سرویس برای کاربر
-
+    # ارسال اطلاعات به کاربر
     await context.bot.send_message(
-
         chat_id=user_id,
-
         text=(
-
             "🎉 پرداخت شما تایید شد.\n\n"
-
             "📦 سرویس شما آماده است.\n\n"
-
-            f"👤 نام کاربری:\n"
-            f"{result['username']}\n\n"
-
-            "🔗 لینک اشتراک:\n"
-            f"{result['subscription']}"
-
+            f"👤 نام کاربری:\n{result['username']}\n\n"
+            f"🔗 لینک اشتراک:\n{result['subscription']}"
         )
-
     )
-
-
-
-
 
     await query.message.reply_text(
-
-        "✅ سرویس ساخته شد و برای کاربر ارسال گردید."
-
+        "✅ سرویس با موفقیت ساخته و برای کاربر ارسال شد."
     )
-
-
-
 
 
 # =========================
@@ -632,68 +600,34 @@ async def reject_payment(
 ):
 
     query = update.callback_query
-
-
     await query.answer()
 
+    order_id = query.data.replace("reject_", "")
 
-
-    order_id = query.data.replace(
-
-        "reject_",
-
-        ""
-
-    )
-
-
-
-    order = get_order(
-
-        order_id
-
-    )
-
-
+    order = get_order(order_id)
 
     if order:
 
-
-        delete_order(
-
-            order_id
-
-        )
-
-
+        delete_order(order_id)
 
         await context.bot.send_message(
-
             chat_id=order["user_id"],
-
             text=(
-
-                "❌ پرداخت شما رد شد.\n\n"
-
+                "❌ پرداخت شما توسط مدیریت رد شد.\n\n"
                 "در صورت نیاز دوباره رسید ارسال کنید."
-
             )
-
         )
 
-
-
-
     await query.message.reply_text(
-
         "✅ سفارش رد شد."
+    )
 
-)# =========================
+
+# =========================
 # ثبت Handler ها
 # =========================
 
 def register_handlers(app):
-
 
     from telegram.ext import (
         CommandHandler,
@@ -702,134 +636,58 @@ def register_handlers(app):
         filters
     )
 
-
-
-    # =====================
-    # دستور start
-    # =====================
-
+    # start
     app.add_handler(
-
         CommandHandler(
-
             "start",
-
             start
-
         )
-
     )
 
-
-
-
-    # =====================
-    # خرید و انتخاب پلن
-    # =====================
-
+    # خرید
     app.add_handler(
-
         CallbackQueryHandler(
-
             button,
-
-            pattern="^(buy|plan_)"
-
+            pattern="^(buy|plan_|admin_panel)"
         )
-
     )
 
-
-
-
-    # =====================
     # سرویس من
-    # =====================
-
     app.add_handler(
-
         CallbackQueryHandler(
-
             show_service,
-
             pattern="^my_service$"
-
         )
-
     )
 
-
-
-
-    # =====================
     # پشتیبانی
-    # =====================
-
     app.add_handler(
-
         CallbackQueryHandler(
-
             show_support,
-
             pattern="^support$"
-
         )
-
     )
 
-
-
-
-    # =====================
     # تایید پرداخت
-    # =====================
-
     app.add_handler(
-
         CallbackQueryHandler(
-
             approve_payment,
-
             pattern="^approve_"
-
         )
-
     )
 
-
-
-
-    # =====================
     # رد پرداخت
-    # =====================
-
     app.add_handler(
-
         CallbackQueryHandler(
-
             reject_payment,
-
             pattern="^reject_"
-
         )
-
     )
 
-
-
-
-    # =====================
-    # عکس رسید پرداخت
-    # =====================
-
+    # دریافت رسید
     app.add_handler(
-
         MessageHandler(
-
             filters.PHOTO,
-
             receipt_photo
-
         )
-
-            )
+    )
