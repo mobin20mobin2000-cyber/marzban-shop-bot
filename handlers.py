@@ -1,9 +1,8 @@
 # =========================
 # handlers.py
 # Zeus Shop VPN
-# Part 1/3
+# Part 1/4
 # =========================
-
 
 from telegram import (
     Update,
@@ -11,17 +10,11 @@ from telegram import (
     InlineKeyboardMarkup
 )
 
-
 from telegram.ext import (
     ContextTypes
 )
 
-
-from config import (
-    ADMIN_ID,
-    ADMIN_IDS
-)
-
+from config import ADMIN_ID
 
 from texts import (
     WELCOME_TEXT,
@@ -30,17 +23,14 @@ from texts import (
     MY_SERVICE_TEXT
 )
 
-
 from plans import (
     PLANS,
     get_plan
 )
 
-
 from order import (
     create_order
 )
-
 
 from storage import (
     save_order,
@@ -51,16 +41,15 @@ from storage import (
     get_service
 )
 
-
 from admin import (
+    admin_panel,
     admin_buttons,
     create_subscription
 )
 
 
-
 # =========================
-# منوی کاربر
+# منوی اصلی کاربر
 # =========================
 
 def user_menu():
@@ -90,21 +79,16 @@ def user_menu():
 
     ]
 
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
-
+    return InlineKeyboardMarkup(keyboard)
 
 
 # =========================
-# منوی پلن ها
+# منوی پلن‌ها
 # =========================
 
 def plans_keyboard():
 
     keyboard = []
-
 
     for key, plan in PLANS.items():
 
@@ -114,10 +98,7 @@ def plans_keyboard():
 
                 InlineKeyboardButton(
 
-                    text=(
-                        f"📦 {plan['name']} | "
-                        f"💰 {plan['price']:,} تومان"
-                    ),
+                    text=f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
 
                     callback_data=f"plan_{key}"
 
@@ -127,15 +108,11 @@ def plans_keyboard():
 
         )
 
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
-
+    return InlineKeyboardMarkup(keyboard)
 
 
 # =========================
-# شروع ربات
+# /start
 # =========================
 
 async def start(
@@ -143,46 +120,33 @@ async def start(
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-    user_id = update.effective_user.id
+    user = update.effective_user
 
+    user_id = user.id
 
-
-    # ادمین
-
-    if user_id in ADMIN_IDS:
-
-
-        from admin_panel import admin_panel
-
+    # پنل مدیریت
+    if user_id == ADMIN_ID:
 
         await update.message.reply_text(
 
-            "👑 پنل مدیریت Zeus Shop VPN",
+            text="👑 به پنل مدیریت Zeus Shop VPN خوش آمدید.",
 
             reply_markup=admin_panel()
 
         )
 
-
         return
 
-
-
-    # کاربر عادی
-
+    # منوی کاربران
     await update.message.reply_text(
 
-        WELCOME_TEXT,
+        text=WELCOME_TEXT,
 
         reply_markup=user_menu()
 
     )
-
-
-
-
-# =========================
-# مدیریت دکمه ها
+    # =========================
+# مدیریت دکمه‌ها
 # =========================
 
 async def button(
@@ -192,15 +156,10 @@ async def button(
 
     query = update.callback_query
 
-
     await query.answer()
 
-
-
     user_id = query.from_user.id
-
     data = query.data
-
 
 
     # =====================
@@ -209,23 +168,14 @@ async def button(
 
     if data == "admin_panel":
 
-
-        if user_id not in ADMIN_IDS:
+        if user_id != ADMIN_ID:
 
             await query.answer(
-
-                "⛔ دسترسی ندارید",
-
+                "⛔ دسترسی ندارید.",
                 show_alert=True
-
             )
 
             return
-
-
-
-        from admin_panel import admin_panel
-
 
         await query.message.reply_text(
 
@@ -235,9 +185,7 @@ async def button(
 
         )
 
-
         return
-
 
 
     # =====================
@@ -246,18 +194,15 @@ async def button(
 
     if data == "buy":
 
-
         await query.message.reply_text(
 
-            "📦 لطفاً پلن مورد نظر را انتخاب کنید:",
+            "📦 لطفاً یکی از پلن‌های زیر را انتخاب کنید:",
 
             reply_markup=plans_keyboard()
 
         )
 
-
         return
-
 
 
     # =====================
@@ -266,93 +211,57 @@ async def button(
 
     if data.startswith("plan_"):
 
-
         plan_id = data.replace(
-
             "plan_",
-
             ""
-
         )
-
 
         plan = get_plan(plan_id)
 
-
-
         if plan is None:
 
-
             await query.message.reply_text(
-
-                "❌ پلن پیدا نشد."
-
+                "❌ پلن موردنظر پیدا نشد."
             )
 
             return
 
-
-
+        # ایجاد شماره سفارش
         order_id = create_order(
-
             user_id,
-
             plan["name"]
-
         )
 
-
-
+        # ذخیره سفارش
         save_order(
-
             order_id,
-
             user_id,
-
             plan
-
         )
 
-
-
-        await query.message.reply_text(
-
+        payment_message = (
             PAYMENT_TEXT.format(
-
                 price=plan["price"]
-
             )
-
             +
-
             f"""
 
-
-
 🧾 شماره سفارش:
-
 {order_id}
 
-
-
 📦 پلن:
-
 {plan['name']}
 
-
-
 💰 مبلغ:
-
 {plan['price']:,} تومان
 
-
-
-بعد از پرداخت، عکس رسید را ارسال کنید.
-
+📸 پس از پرداخت، تصویر رسید را ارسال کنید.
 """
-
         )
 
+        await query.message.reply_text(
+            payment_message
+        )
 
         return
         # =========================
@@ -366,36 +275,21 @@ async def show_service(
 
     query = update.callback_query
 
-
     await query.answer()
-
 
     user_id = query.from_user.id
 
-
-
-    service = get_service(
-
-        user_id
-
-    )
-
-
+    service = get_service(user_id)
 
     if service is None:
 
-
         await query.message.reply_text(
 
-            "❌ هنوز سرویس فعالی ندارید."
+            "❌ هنوز هیچ سرویس فعالی ندارید."
 
         )
 
-
         return
-
-
-
 
     await query.message.reply_text(
 
@@ -410,9 +304,6 @@ async def show_service(
     )
 
 
-
-
-
 # =========================
 # پشتیبانی
 # =========================
@@ -424,10 +315,7 @@ async def show_support(
 
     query = update.callback_query
 
-
     await query.answer()
-
-
 
     await query.message.reply_text(
 
@@ -436,11 +324,8 @@ async def show_support(
     )
 
 
-
-
-
 # =========================
-# دریافت عکس رسید پرداخت
+# دریافت رسید پرداخت
 # =========================
 
 async def receipt_photo(
@@ -448,38 +333,37 @@ async def receipt_photo(
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-
     user_id = update.effective_user.id
 
-
-
-    order = get_order_by_user(
-
-        user_id
-
-    )
-
-
+    order = get_order_by_user(user_id)
 
     if order is None:
 
-
         await update.message.reply_text(
 
-            "❌ ابتدا یک سفارش ایجاد کنید."
+            "❌ ابتدا یک سفارش ثبت کنید."
 
         )
 
-
         return
-
-
-
 
     photo = update.message.photo[-1]
 
+    caption = f"""
+📥 رسید پرداخت جدید
 
+👤 کاربر:
+{user_id}
 
+🆔 سفارش:
+{order['order_id']}
+
+📦 پلن:
+{order['plan']['name']}
+
+💰 مبلغ:
+{order['plan']['price']:,} تومان
+"""
 
     await context.bot.send_photo(
 
@@ -487,45 +371,22 @@ async def receipt_photo(
 
         photo=photo.file_id,
 
-
-        caption=(
-
-            "📥 رسید پرداخت جدید\n\n"
-
-            f"👤 کاربر:\n"
-            f"{user_id}\n\n"
-
-            f"🆔 سفارش:\n"
-            f"{order['order_id']}\n\n"
-
-            f"📦 پلن:\n"
-            f"{order['plan']['name']}\n\n"
-
-            f"💰 مبلغ:\n"
-            f"{order['plan']['price']:,} تومان"
-
-        ),
-
+        caption=caption,
 
         reply_markup=admin_buttons(
-
             order["order_id"]
-
         )
 
     )
 
-
-
-
     await update.message.reply_text(
 
-        "✅ رسید پرداخت شما ارسال شد.\n\n"
-        "⏳ منتظر تایید مدیریت باشید."
+        "✅ رسید پرداخت شما با موفقیت ارسال شد.\n\n"
+        "⏳ لطفاً منتظر تأیید مدیریت باشید."
 
     )
-# =========================
-# تایید پرداخت توسط ادمین
+    # =========================
+# تایید پرداخت
 # =========================
 
 async def approve_payment(
@@ -534,9 +395,13 @@ async def approve_payment(
 ):
 
     query = update.callback_query
+
     await query.answer()
 
-    order_id = query.data.replace("approve_", "")
+    order_id = query.data.replace(
+        "approve_",
+        ""
+    )
 
     order = get_order(order_id)
 
@@ -549,9 +414,10 @@ async def approve_payment(
         return
 
     user_id = order["user_id"]
+
     plan = order["plan"]
 
-    # ساخت اشتراک در مرزبان
+    # ساخت سرویس در مرزبان
     result = create_subscription(
         plan["volume"]
     )
@@ -559,16 +425,20 @@ async def approve_payment(
     if result is None:
 
         await query.message.reply_text(
-            "❌ خطا در ساخت سرویس."
+            "❌ خطا در ساخت سرویس در مرزبان."
         )
 
         return
 
-    # ذخیره سرویس
+    # ذخیره اطلاعات سرویس
     save_service(
+
         user_id,
+
         result["username"],
+
         result["subscription"]
+
     )
 
     # حذف سفارش
@@ -576,17 +446,27 @@ async def approve_payment(
 
     # ارسال اطلاعات به کاربر
     await context.bot.send_message(
+
         chat_id=user_id,
+
         text=(
             "🎉 پرداخت شما تایید شد.\n\n"
-            "📦 سرویس شما آماده است.\n\n"
-            f"👤 نام کاربری:\n{result['username']}\n\n"
-            f"🔗 لینک اشتراک:\n{result['subscription']}"
+
+            "📦 سرویس شما با موفقیت ساخته شد.\n\n"
+
+            f"👤 نام کاربری:\n"
+            f"{result['username']}\n\n"
+
+            f"🔗 لینک اشتراک:\n"
+            f"{result['subscription']}"
         )
+
     )
 
     await query.message.reply_text(
-        "✅ سرویس با موفقیت ساخته و برای کاربر ارسال شد."
+
+        "✅ پرداخت تایید شد و سرویس برای کاربر ارسال گردید."
+
     )
 
 
@@ -600,9 +480,13 @@ async def reject_payment(
 ):
 
     query = update.callback_query
+
     await query.answer()
 
-    order_id = query.data.replace("reject_", "")
+    order_id = query.data.replace(
+        "reject_",
+        ""
+    )
 
     order = get_order(order_id)
 
@@ -611,83 +495,8 @@ async def reject_payment(
         delete_order(order_id)
 
         await context.bot.send_message(
+
             chat_id=order["user_id"],
+
             text=(
-                "❌ پرداخت شما توسط مدیریت رد شد.\n\n"
-                "در صورت نیاز دوباره رسید ارسال کنید."
-            )
-        )
-
-    await query.message.reply_text(
-        "✅ سفارش رد شد."
-    )
-
-
-# =========================
-# ثبت Handler ها
-# =========================
-
-def register_handlers(app):
-
-    from telegram.ext import (
-        CommandHandler,
-        CallbackQueryHandler,
-        MessageHandler,
-        filters
-    )
-
-    # start
-    app.add_handler(
-        CommandHandler(
-            "start",
-            start
-        )
-    )
-
-    # خرید
-    app.add_handler(
-        CallbackQueryHandler(
-            button,
-            pattern="^(buy|plan_|admin_panel)"
-        )
-    )
-
-    # سرویس من
-    app.add_handler(
-        CallbackQueryHandler(
-            show_service,
-            pattern="^my_service$"
-        )
-    )
-
-    # پشتیبانی
-    app.add_handler(
-        CallbackQueryHandler(
-            show_support,
-            pattern="^support$"
-        )
-    )
-
-    # تایید پرداخت
-    app.add_handler(
-        CallbackQueryHandler(
-            approve_payment,
-            pattern="^approve_"
-        )
-    )
-
-    # رد پرداخت
-    app.add_handler(
-        CallbackQueryHandler(
-            reject_payment,
-            pattern="^reject_"
-        )
-    )
-
-    # دریافت رسید
-    app.add_handler(
-        MessageHandler(
-            filters.PHOTO,
-            receipt_photo
-        )
-    )
+                "❌ پرداخت شما توسط
