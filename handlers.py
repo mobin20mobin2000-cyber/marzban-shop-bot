@@ -90,10 +90,7 @@ def user_menu():
 
     ]
 
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
+    return InlineKeyboardMarkup(keyboard)
 
 
 
@@ -109,23 +106,16 @@ def plans_keyboard():
     for key, plan in PLANS.items():
 
         keyboard.append(
-
             [
                 InlineKeyboardButton(
-
                     f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
-
                     callback_data=f"plan_{key}"
-
                 )
             ]
-
         )
 
 
-    return InlineKeyboardMarkup(
-        keyboard
-    )
+    return InlineKeyboardMarkup(keyboard)
 
 
 
@@ -150,11 +140,8 @@ async def start(
     if user.id == ADMIN_ID:
 
         await update.message.reply_text(
-
             "👑 پنل مدیریت Zeus Shop VPN",
-
             reply_markup=admin_panel()
-
         )
 
         return
@@ -162,11 +149,8 @@ async def start(
 
 
     await update.message.reply_text(
-
         WELCOME_TEXT,
-
         reply_markup=user_menu()
-
     )
     # =========================
 # مدیریت دکمه‌ها
@@ -318,9 +302,7 @@ async def show_service(
 
 
     service = get_subscription(
-
         user_id
-
     )
 
 
@@ -403,7 +385,6 @@ async def receipt_photo(
     )
 
 
-
     if order is None:
 
         await update.message.reply_text(
@@ -437,7 +418,7 @@ async def receipt_photo(
 {user_id}
 
 
-🧾 شماره سفارش:
+🧾 سفارش:
 
 {order["id"]}
 
@@ -534,6 +515,7 @@ async def approve_payment(
 
     if order is None:
 
+
         await query.message.reply_text(
 
             "❌ سفارش پیدا نشد."
@@ -556,6 +538,7 @@ async def approve_payment(
 
 
     if result is None:
+
 
         await query.message.reply_text(
 
@@ -598,7 +581,7 @@ async def approve_payment(
 
 
 
-    # ارسال سرویس برای کاربر
+    # ارسال سرویس به کاربر
 
     await context.bot.send_message(
 
@@ -720,7 +703,7 @@ async def reject_payment(
 def register_handlers(app):
 
 
-    # دستور start
+    # start
 
     app.add_handler(
 
@@ -736,7 +719,7 @@ def register_handlers(app):
 
 
 
-    # خرید و انتخاب پلن
+    # خرید و پلن‌ها
 
     app.add_handler(
 
@@ -816,7 +799,7 @@ def register_handlers(app):
 
 
 
-    # دریافت عکس رسید
+    # دریافت رسید
 
     app.add_handler(
 
