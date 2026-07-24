@@ -3,21 +3,14 @@
 # Zeus Shop VPN
 # =========================
 
-
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
 
-
 from marzban import Marzban
 
-
-from config import (
-    MARZBAN_URL,
-    MARZBAN_USERNAME,
-    MARZBAN_PASSWORD
-)
+from config import MARZBAN_URL
 
 
 
@@ -66,15 +59,12 @@ def admin_panel():
 
     ]
 
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
+    return InlineKeyboardMarkup(keyboard)
 
 
 
 # =========================
-# دکمه‌های رسید پرداخت
+# دکمه رسید پرداخت
 # =========================
 
 def admin_buttons(user_id):
@@ -97,10 +87,7 @@ def admin_buttons(user_id):
 
     ]
 
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
+    return InlineKeyboardMarkup(keyboard)
 
 
 
@@ -112,28 +99,35 @@ def create_subscription(volume):
 
     try:
 
-
-        marzban = Marzban(
-
-            MARZBAN_URL,
-
-            MARZBAN_USERNAME,
-
-            MARZBAN_PASSWORD
-
-        )
+        marzban = Marzban()
 
 
+        # تست ورود
+
+        if not marzban.login():
+
+            print(
+                "❌ Marzban Login Failed"
+            )
+
+            return None
+
+
+
+        # ساخت کاربر
 
         user = marzban.create_user(
 
-            data_limit=volume * 1024 * 1024 * 1024
+            data_limit=volume
 
         )
 
 
+        if user is None:
 
-        if not user:
+            print(
+                "❌ User creation failed"
+            )
 
             return None
 
@@ -146,9 +140,15 @@ def create_subscription(volume):
 
         if not username:
 
+            print(
+                "❌ Username not found"
+            )
+
             return None
 
 
+
+        # گرفتن لینک اشتراک
 
         subscription = marzban.subscription(
 
@@ -157,8 +157,19 @@ def create_subscription(volume):
         )
 
 
+        if not subscription:
 
-        if subscription and subscription.startswith("/"):
+            print(
+                "❌ Subscription link not found"
+            )
+
+            return None
+
+
+
+        # اصلاح لینک
+
+        if subscription.startswith("/"):
 
             subscription = (
 
@@ -176,19 +187,4 @@ def create_subscription(volume):
 
             "username": username,
 
-            "subscription": subscription
-
-        }
-
-
-
-    except Exception as e:
-
-
-        print(
-            "❌ Marzban Error:",
-            e
-        )
-
-
-        return None
+           
