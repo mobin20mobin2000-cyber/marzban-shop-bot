@@ -3,60 +3,37 @@
 # Zeus Shop VPN
 # =========================
 
-
 from telegram.ext import Application
-
 
 from config import BOT_TOKEN
 
-
 from handlers import register_handlers
 
+from database import init_db
 
-
-# =========================
-# اجرای ربات
-# =========================
 
 def main():
 
+    # ساخت دیتابیس
+    init_db()
+
 
     app = Application.builder().token(
-
         BOT_TOKEN
-
     ).build()
 
 
-
-    # ثبت تمام هندلرها
-
-    register_handlers(
-
-        app
-
-    )
-
+    register_handlers(app)
 
 
     print(
-
-        "🚀 Zeus Shop VPN Bot Started"
-
+        "🚀 Zeus Shop VPN Started"
     )
 
-
-
-    # اجرای ربات
 
     app.run_polling()
 
 
-
-
-# =========================
-# شروع برنامه
-# =========================
 
 if __name__ == "__main__":
 
