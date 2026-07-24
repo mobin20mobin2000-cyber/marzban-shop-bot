@@ -1,11 +1,35 @@
+# =========================
+# config.py
+# Zeus Shop VPN
+# =========================
+
 import os
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+# =========================
+# Telegram
+# =========================
 
-MARZBAN_URL = os.getenv("MARZBAN_URL")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 
-MARZBAN_USERNAME = os.getenv("MARZBAN_USERNAME")
+ADMIN_ID = int(
+    os.getenv("ADMIN_ID", "0")
+)
 
-MARZBAN_PASSWORD = os.getenv("MARZBAN_PASSWORD")
+# =========================
+# Marzban
+# =========================
 
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
+MARZBAN_URL = os.getenv(
+    "MARZBAN_URL",
+    ""
+)
+
+MARZBAN_USERNAME = os.getenv(
+    "MARZBAN_USERNAME",
+    ""
+)
+
+MARZBAN_PASSWORD = os.getenv(
+    "MARZBAN_PASSWORD",
+    ""
+)
