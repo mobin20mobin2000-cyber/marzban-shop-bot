@@ -3,16 +3,17 @@
 # Zeus Shop VPN
 # =========================
 
+
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
 
+
 from marzban import Marzban
 
-from config import (
-    MARZBAN_URL
-)
+from config import MARZBAN_URL
+
 
 
 # =========================
@@ -25,7 +26,7 @@ def admin_panel():
 
         [
             InlineKeyboardButton(
-                "📋 سفارش‌های جدید",
+                "📋 سفارش‌ها",
                 callback_data="admin_orders"
             )
         ],
@@ -60,14 +61,19 @@ def admin_panel():
 
     ]
 
-    return InlineKeyboardMarkup(keyboard)
+
+    return InlineKeyboardMarkup(
+        keyboard
+    )
+
 
 
 # =========================
-# دکمه‌های تایید پرداخت
+# تایید پرداخت
 # =========================
 
 def admin_buttons(order_id):
+
 
     keyboard = [
 
@@ -78,6 +84,7 @@ def admin_buttons(order_id):
             )
         ],
 
+
         [
             InlineKeyboardButton(
                 "❌ رد پرداخت",
@@ -87,7 +94,11 @@ def admin_buttons(order_id):
 
     ]
 
-    return InlineKeyboardMarkup(keyboard)
+
+    return InlineKeyboardMarkup(
+        keyboard
+    )
+
 
 
 # =========================
@@ -96,37 +107,46 @@ def admin_buttons(order_id):
 
 def create_subscription(volume):
 
+
     marzban = Marzban()
 
-    user = marzban.create_user(
 
-        username=None,
+
+    user = marzban.create_user(
 
         data_limit=volume
 
     )
 
+
+
     if not user:
 
         return None
 
-    subscription = user.get(
-        "subscription_url"
+
+
+    username = user.get(
+        "username"
     )
 
-    if subscription and subscription.startswith("/"):
 
-        subscription = (
-            MARZBAN_URL.rstrip("/")
-            + subscription
-        )
+
+    subscription = marzban.subscription(
+
+        username
+
+    )
+
+
 
     return {
 
-        "username": user.get(
-            "username"
-        ),
+
+        "username": username,
+
 
         "subscription": subscription
+
 
     }
