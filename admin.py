@@ -12,7 +12,11 @@ from telegram import (
 
 from marzban import Marzban
 
-from config import MARZBAN_URL
+from config import (
+    MARZBAN_URL,
+    MARZBAN_USERNAME,
+    MARZBAN_PASSWORD
+)
 
 
 
@@ -62,14 +66,12 @@ def admin_panel():
     ]
 
 
-    return InlineKeyboardMarkup(
-        keyboard
-    )
+    return InlineKeyboardMarkup(keyboard)
 
 
 
 # =========================
-# دکمه تایید رسید
+# دکمه رسید پرداخت
 # =========================
 
 def admin_buttons(user_id):
@@ -93,29 +95,33 @@ def admin_buttons(user_id):
     ]
 
 
-    return InlineKeyboardMarkup(
-        keyboard
-    )
-    # =========================
-# ساخت اشتراک مرزبان
+    return InlineKeyboardMarkup(keyboard)
+
+
+
+
+# =========================
+# ساخت سرویس مرزبان
 # =========================
 
-def create_subscription(
-
-    volume
-
-):
+def create_subscription(volume):
 
     try:
 
-        marzban = Marzban()
+        marzban = Marzban(
 
+            MARZBAN_URL,
 
-        # ساخت کاربر در مرزبان
+            MARZBAN_USERNAME,
+
+            MARZBAN_PASSWORD
+
+        )
+
 
         user = marzban.create_user(
 
-            data_limit=volume
+            data_limit=volume * 1024 * 1024 * 1024
 
         )
 
@@ -137,16 +143,21 @@ def create_subscription(
 
 
 
-        # گرفتن لینک اشتراک
-
-        subscription = marzban.subscription(
+        subscription = marzban.get_subscription(
 
             username
 
         )
 
 
-        if subscription and subscription.startswith("/"):
+
+        if not subscription:
+
+            return None
+
+
+
+        if subscription.startswith("/"):
 
             subscription = (
 
@@ -172,11 +183,9 @@ def create_subscription(
 
     except Exception as e:
 
-
         print(
             "Marzban Error:",
             e
         )
-
 
         return None
