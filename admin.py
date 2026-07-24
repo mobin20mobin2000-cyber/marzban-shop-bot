@@ -68,7 +68,7 @@ def admin_panel():
 
 
 # =========================
-# دکمه رسید
+# دکمه تایید رسید
 # =========================
 
 def admin_buttons(user_id):
@@ -98,7 +98,7 @@ def admin_buttons(user_id):
 
 
 # =========================
-# ساخت اشتراک مرزبان
+# ساخت سرویس مرزبان
 # =========================
 
 def create_subscription(volume):
@@ -110,15 +110,12 @@ def create_subscription(volume):
 
 
 
-        # ورود
+        # لاگین
 
-        login = marzban.login()
-
-
-        if not login:
+        if not marzban.login():
 
             print(
-                "❌ ورود به مرزبان ناموفق بود"
+                "❌ Marzban Login Failed"
             )
 
             return None
@@ -126,15 +123,16 @@ def create_subscription(volume):
 
 
         print(
-            "✅ Marzban Login OK"
+            "✅ Marzban Login Success"
         )
 
 
 
         # ساخت کاربر
 
-
         user = marzban.create_user(
+
+            username=None,
 
             data_limit=int(volume)
 
@@ -146,11 +144,10 @@ def create_subscription(volume):
 
 
             print(
-                "❌ ساخت کاربر مرزبان شکست خورد"
+                "❌ Marzban Create User Failed"
             )
 
             return None
-
 
 
 
@@ -164,23 +161,21 @@ def create_subscription(volume):
 
 
             print(
-                "❌ Username دریافت نشد"
+                "❌ Username Empty"
             )
 
             return None
 
 
 
-
         print(
-            "✅ User Created:",
+            "✅ Created User:",
             username
         )
 
 
 
         # گرفتن لینک اشتراک
-
 
         subscription = marzban.subscription(
 
@@ -194,16 +189,14 @@ def create_subscription(volume):
 
 
             print(
-                "❌ لینک اشتراک پیدا نشد"
+                "❌ Subscription URL Empty"
             )
 
             return None
 
 
 
-
-        # اگر لینک نسبی بود
-
+        # کامل کردن لینک
 
         if subscription.startswith("/"):
 
@@ -219,18 +212,13 @@ def create_subscription(volume):
 
 
 
-
         return {
-
 
             "username": username,
 
-
             "subscription": subscription
 
-
         }
-
 
 
 
@@ -238,11 +226,8 @@ def create_subscription(volume):
 
 
         print(
-
-            "❌ Marzban Exception:",
-
+            "❌ Marzban Error:",
             e
-
         )
 
 
