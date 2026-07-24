@@ -69,7 +69,7 @@ def admin_panel():
 
 
 # =========================
-# دکمه رسید پرداخت
+# دکمه تایید رسید
 # =========================
 
 def admin_buttons(user_id):
@@ -77,21 +77,17 @@ def admin_buttons(user_id):
     keyboard = [
 
         [
-
             InlineKeyboardButton(
                 "✅ تایید پرداخت",
                 callback_data=f"approve_{user_id}"
             )
-
         ],
 
         [
-
             InlineKeyboardButton(
                 "❌ رد پرداخت",
                 callback_data=f"reject_{user_id}"
             )
-
         ]
 
     ]
@@ -100,71 +96,87 @@ def admin_buttons(user_id):
     return InlineKeyboardMarkup(
         keyboard
     )
-
-
-
-# =========================
+    # =========================
 # ساخت اشتراک مرزبان
 # =========================
 
-def create_subscription(volume):
+def create_subscription(
+
+    volume
+
+):
+
+    try:
+
+        marzban = Marzban()
 
 
-    marzban = Marzban()
+        # ساخت کاربر در مرزبان
 
+        user = marzban.create_user(
 
-
-    user = marzban.create_user(
-
-        data_limit=volume
-
-    )
-
-
-    if not user:
-
-        return None
-
-
-
-    username = user.get(
-        "username"
-    )
-
-
-    if not username:
-
-        return None
-
-
-
-    subscription = marzban.subscription(
-
-        username
-
-    )
-
-
-
-    if subscription and subscription.startswith("/"):
-
-
-        subscription = (
-
-            MARZBAN_URL.rstrip("/")
-
-            +
-
-            subscription
+            data_limit=volume
 
         )
 
 
+        if not user:
 
-    return {
+            return None
 
-        "username": username,
 
-        "subscription": subscription
 
-    }
+        username = user.get(
+            "username"
+        )
+
+
+        if not username:
+
+            return None
+
+
+
+        # گرفتن لینک اشتراک
+
+        subscription = marzban.subscription(
+
+            username
+
+        )
+
+
+        if subscription and subscription.startswith("/"):
+
+            subscription = (
+
+                MARZBAN_URL.rstrip("/")
+
+                +
+
+                subscription
+
+            )
+
+
+
+        return {
+
+            "username": username,
+
+            "subscription": subscription
+
+        }
+
+
+
+    except Exception as e:
+
+
+        print(
+            "Marzban Error:",
+            e
+        )
+
+
+        return None
