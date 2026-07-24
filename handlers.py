@@ -98,7 +98,7 @@ def user_menu():
 
 
 # =========================
-# لیست پلن‌ها
+# منوی پلن‌ها
 # =========================
 
 def plans_keyboard():
@@ -112,8 +112,11 @@ def plans_keyboard():
 
             [
                 InlineKeyboardButton(
+
                     f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
+
                     callback_data=f"plan_{key}"
+
                 )
             ]
 
@@ -127,7 +130,7 @@ def plans_keyboard():
 
 
 # =========================
-# start
+# شروع ربات
 # =========================
 
 async def start(
@@ -145,6 +148,7 @@ async def start(
 
 
     if user.id == ADMIN_ID:
+
 
         await update.message.reply_text(
 
@@ -284,7 +288,6 @@ async def button(
 
 {order_id}
 
-
 ━━━━━━━━━━━━━━
 
 
@@ -359,7 +362,33 @@ f"""
 
 {service["expire_date"] or "نامشخص"}
 
-━━━━━━━━
+━━━━━━━━━━━━━━
+"""
+
+    )
+
+
+
+
+# =========================
+# پشتیبانی
+# =========================
+
+async def show_support(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+    await query.message.reply_text(
+
+        SUPPORT_TEXT
+
+    )
     # =========================
 # دریافت رسید پرداخت
 # =========================
@@ -411,7 +440,7 @@ async def receipt_photo(
 {user_id}
 
 
-🧾 شماره سفارش:
+🧾 سفارش:
 
 {order["id"]}
 
@@ -440,7 +469,9 @@ async def receipt_photo(
 
 
         reply_markup=admin_buttons(
+
             user_id
+
         )
 
     )
@@ -450,9 +481,9 @@ async def receipt_photo(
     await update.message.reply_text(
 
 """
-✅ رسید شما دریافت شد.
+✅ رسید شما ارسال شد.
 
-⏳ پس از تایید مدیریت، سرویس ساخته می‌شود.
+⏳ منتظر تایید مدیریت باشید.
 """
 
     )
@@ -497,7 +528,9 @@ async def approve_payment(
 
 
     order = last_order(
+
         user_id
+
     )
 
 
@@ -516,7 +549,7 @@ async def approve_payment(
 
 
 
-    # ساخت کاربر در مرزبان
+    # ساخت سرویس مرزبان
 
     result = create_subscription(
 
@@ -559,7 +592,7 @@ async def approve_payment(
 
 
 
-    # تغییر وضعیت سفارش
+    # تایید سفارش
 
     db_approve_payment(
 
@@ -570,7 +603,7 @@ async def approve_payment(
 
 
 
-    # ارسال سرویس به کاربر
+    # ارسال سرویس برای کاربر
 
     await context.bot.send_message(
 
@@ -649,7 +682,9 @@ async def reject_payment(
 
 
     order = last_order(
+
         user_id
+
     )
 
 
@@ -671,7 +706,7 @@ async def reject_payment(
             text="""
 ❌ پرداخت شما رد شد.
 
-در صورت اشتباه بودن، دوباره رسید ارسال کنید.
+در صورت اشتباه دوباره رسید ارسال کنید.
 """
 
         )
@@ -682,7 +717,7 @@ async def reject_payment(
 
         "✅ پرداخت رد شد."
 
-    )
+)
     # =========================
 # ثبت Handler ها
 # =========================
