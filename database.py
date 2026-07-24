@@ -808,3 +808,127 @@ def get_stats():
         "income": total_sales()
 
     }
+# =========================
+# سفارش آخر کاربر
+# =========================
+
+def last_order(
+    telegram_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE telegram_id=?
+
+        ORDER BY id DESC
+
+        LIMIT 1
+
+        """,
+
+        (
+            telegram_id,
+        )
+    )
+
+
+    order = cursor.fetchone()
+
+
+    db.close()
+
+
+    return order
+
+
+
+# =========================
+# حذف سفارش
+# =========================
+
+def delete_order(
+    order_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        DELETE FROM orders
+
+        WHERE id=?
+
+        """,
+
+        (
+            order_id,
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+# =========================
+# تعداد اشتراک‌ها
+# =========================
+
+def subscriptions_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+
+        FROM subscriptions
+
+        """
+    )
+
+
+    count = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return count
+
+
+
+# =========================
+# آمار کلی مدیریت
+# =========================
+
+def get_stats():
+
+    return {
+
+        "users": users_count(),
+
+        "sales": sales_count(),
+
+        "income": total_sales(),
+
+        "subscriptions": subscriptions_count()
+
+    }
