@@ -90,7 +90,6 @@ def user_menu():
 
     ]
 
-
     return InlineKeyboardMarkup(
         keyboard
     )
@@ -149,7 +148,6 @@ async def start(
 
     if user.id == ADMIN_ID:
 
-
         await update.message.reply_text(
 
             "👑 پنل مدیریت Zeus Shop VPN",
@@ -189,9 +187,7 @@ async def button(
 
 
 
-    # =====================
     # خرید اشتراک
-    # =====================
 
     if data == "buy":
 
@@ -208,9 +204,7 @@ async def button(
 
 
 
-    # =====================
     # انتخاب پلن
-    # =====================
 
     if data.startswith("plan_"):
 
@@ -226,7 +220,6 @@ async def button(
 
 
         if plan is None:
-
 
             await query.message.reply_text(
 
@@ -302,6 +295,7 @@ async def button(
 
 
 
+
 # =========================
 # نمایش سرویس من
 # =========================
@@ -321,9 +315,7 @@ async def show_service(
 
 
     service = get_subscription(
-
         user_id
-
     )
 
 
@@ -366,6 +358,7 @@ f"""
 """
 
     )
+
 
 
 
@@ -440,7 +433,7 @@ async def receipt_photo(
 {user_id}
 
 
-🧾 سفارش:
+🧾 شماره سفارش:
 
 {order["id"]}
 
@@ -469,9 +462,7 @@ async def receipt_photo(
 
 
         reply_markup=admin_buttons(
-
             user_id
-
         )
 
     )
@@ -481,7 +472,7 @@ async def receipt_photo(
     await update.message.reply_text(
 
 """
-✅ رسید شما ارسال شد.
+✅ رسید شما دریافت شد.
 
 ⏳ منتظر تایید مدیریت باشید.
 """
@@ -528,9 +519,7 @@ async def approve_payment(
 
 
     order = last_order(
-
         user_id
-
     )
 
 
@@ -545,7 +534,6 @@ async def approve_payment(
         )
 
         return
-
 
 
 
@@ -572,7 +560,6 @@ async def approve_payment(
 
 
 
-
     # ذخیره سرویس
 
     save_subscription(
@@ -591,7 +578,6 @@ async def approve_payment(
 
 
 
-
     # تایید سفارش
 
     db_approve_payment(
@@ -599,7 +585,6 @@ async def approve_payment(
         order["id"]
 
     )
-
 
 
 
@@ -641,12 +626,7 @@ async def approve_payment(
         "✅ سرویس ساخته شد و برای کاربر ارسال گردید."
 
     )
-
-
-
-
-
-# =========================
+    # =========================
 # رد پرداخت
 # =========================
 
@@ -682,9 +662,7 @@ async def reject_payment(
 
 
     order = last_order(
-
         user_id
-
     )
 
 
@@ -706,7 +684,7 @@ async def reject_payment(
             text="""
 ❌ پرداخت شما رد شد.
 
-در صورت اشتباه دوباره رسید ارسال کنید.
+در صورت اشتباه بودن، دوباره رسید ارسال کنید.
 """
 
         )
@@ -717,8 +695,13 @@ async def reject_payment(
 
         "✅ پرداخت رد شد."
 
-)
-    # =========================
+    )
+
+
+
+
+
+# =========================
 # ثبت Handler ها
 # =========================
 
