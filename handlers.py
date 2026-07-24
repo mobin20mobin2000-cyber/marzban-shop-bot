@@ -3,57 +3,47 @@
 # Zeus Shop VPN
 # =========================
 
-
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
 
-
 from telegram.ext import (
     ContextTypes
 )
 
-
 from config import ADMIN_ID
-
 
 from texts import (
     WELCOME_TEXT,
     SUPPORT_TEXT
 )
 
-
 from plans import (
     PLANS,
     get_plan
 )
 
-
 from payment import (
     get_payment_text
 )
-
 
 from database import (
     add_user,
     create_order,
     last_order,
-    user_orders,
     save_subscription,
     get_subscription,
     approve_payment as db_approve_payment,
     reject_payment as db_reject_payment
 )
 
-
 from admin import (
     admin_panel,
     admin_buttons,
     create_subscription
 )
-
 
 
 # =========================
@@ -87,10 +77,7 @@ def user_menu():
 
     ]
 
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
+    return InlineKeyboardMarkup(keyboard)
 
 
 
@@ -102,13 +89,11 @@ def plans_keyboard():
 
     keyboard = []
 
-
     for key, plan in PLANS.items():
 
         keyboard.append(
 
             [
-
                 InlineKeyboardButton(
 
                     f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
@@ -116,15 +101,11 @@ def plans_keyboard():
                     callback_data=f"plan_{key}"
 
                 )
-
             ]
 
         )
 
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
+    return InlineKeyboardMarkup(keyboard)
     # =========================
 # شروع ربات
 # =========================
@@ -149,10 +130,9 @@ async def start(
     )
 
 
-    # اگر ادمین باشد
+    # پنل ادمین
 
     if user.id == ADMIN_ID:
-
 
         await update.message.reply_text(
 
@@ -162,10 +142,11 @@ async def start(
 
         )
 
-
         return
 
 
+
+    # منوی کاربر
 
     await update.message.reply_text(
 
@@ -201,29 +182,23 @@ async def button(
 
 
 
-    # =====================
     # خرید اشتراک
-    # =====================
 
     if data == "buy":
 
-
         await query.message.reply_text(
 
-            "📦 لطفاً پلن مورد نظر را انتخاب کنید:",
+            "📦 پلن مورد نظر را انتخاب کنید:",
 
             reply_markup=plans_keyboard()
 
         )
 
-
         return
 
 
 
-    # =====================
     # انتخاب پلن
-    # =====================
 
     if data.startswith("plan_"):
 
@@ -240,7 +215,6 @@ async def button(
         plan = get_plan(plan_id)
 
 
-
         if plan is None:
 
 
@@ -249,7 +223,6 @@ async def button(
                 "❌ پلن پیدا نشد."
 
             )
-
 
             return
 
@@ -281,10 +254,19 @@ async def button(
 
 
 
-📦 پلن انتخابی:
+📦 پلن:
 
 {plan['name']}
 
+
+💾 حجم:
+
+{plan['volume']} GB
+
+
+⏳ مدت:
+
+{plan['days']} روز
 
 
 💰 مبلغ:
@@ -292,19 +274,16 @@ async def button(
 {plan['price']:,} تومان
 
 
-
 🧾 شماره سفارش:
 
 {order_id}
 
 
-
-بعد از پرداخت، عکس رسید را ارسال کنید.
+📸 بعد از پرداخت، تصویر رسید را ارسال کنید.
 
 """
 
         )
-
 
         return
         # =========================
@@ -344,7 +323,6 @@ async def show_service(
 
         )
 
-
         return
 
 
@@ -356,7 +334,7 @@ f"""
 
 ━━━━━━━━━━━━━━
 
-👤 نام کاربری مرزبان:
+👤 نام کاربری:
 
 {service["marzban_username"]}
 
@@ -430,10 +408,9 @@ async def receipt_photo(
 
         await update.message.reply_text(
 
-            "❌ ابتدا یک سفارش ثبت کنید."
+            "❌ ابتدا سفارش ثبت کنید."
 
         )
-
 
         return
 
@@ -450,20 +427,25 @@ async def receipt_photo(
         photo=photo.file_id,
 
 
-        caption=(
+        caption=f"""
+📥 رسید پرداخت جدید
 
-            "📥 رسید پرداخت جدید\n\n"
 
-            f"👤 کاربر:\n{user_id}\n\n"
+👤 کاربر:
+{user_id}
 
-            f"🧾 سفارش:\n{order['id']}\n\n"
 
-            f"📦 پلن:\n{order['plan']}\n\n"
+🧾 شماره سفارش:
+{order["id"]}
 
-            f"💰 مبلغ:\n{order['price']:,} تومان"
 
-        ),
+📦 پلن:
+{order["plan"]}
 
+
+💰 مبلغ:
+{order["price"]:,} تومان
+""",
 
         reply_markup=admin_buttons(
 
@@ -477,16 +459,13 @@ async def receipt_photo(
     await update.message.reply_text(
 
         """
-✅ رسید شما ارسال شد.
+✅ رسید شما دریافت شد.
 
-⏳ پس از تایید مدیریت، سرویس ساخته می‌شود.
+⏳ پس از بررسی مدیریت، سرویس ساخته می‌شود.
 """
 
-    )
-
-
-
-# =========================
+)
+    # =========================
 # تایید پرداخت
 # =========================
 
@@ -502,6 +481,7 @@ async def approve_payment(
 
 
     await query.answer()
+
 
 
     if query.from_user.id != ADMIN_ID:
@@ -523,6 +503,7 @@ async def approve_payment(
     )
 
 
+
     order = last_order(
 
         user_id
@@ -539,9 +520,11 @@ async def approve_payment(
 
         )
 
-
         return
-            # ساخت سرویس در مرزبان
+
+
+
+    # ساخت سرویس مرزبان
 
     result = create_subscription(
 
@@ -559,12 +542,11 @@ async def approve_payment(
 
         )
 
-
         return
 
 
 
-    # ذخیره اشتراک
+    # ذخیره سرویس
 
     save_subscription(
 
@@ -581,7 +563,8 @@ async def approve_payment(
     )
 
 
-    # تغییر وضعیت سفارش
+
+    # تایید سفارش
 
     db_approve_payment(
 
@@ -591,31 +574,30 @@ async def approve_payment(
 
 
 
-    # ارسال سرویس به کاربر
+    # ارسال سرویس برای کاربر
 
     await context.bot.send_message(
 
         chat_id=user_id,
 
+        text=f"""
+🎉 پرداخت شما تایید شد.
 
-        text=(
 
-            "🎉 پرداخت شما تایید شد.\n\n"
+📦 سرویس شما آماده است.
 
-            "📦 سرویس شما آماده است.\n\n"
 
-            f"👤 نام کاربری:\n"
+👤 نام کاربری:
 
-            f"{result['username']}\n\n"
+{result["username"]}
 
-            "🔗 لینک اشتراک:\n"
 
-            f"{result['subscription']}"
+🔗 لینک اشتراک:
 
-        )
+{result["subscription"]}
+"""
 
     )
-
 
 
     await query.message.reply_text(
@@ -644,6 +626,7 @@ async def reject_payment(
     await query.answer()
 
 
+
     if query.from_user.id != ADMIN_ID:
 
         return
@@ -661,6 +644,7 @@ async def reject_payment(
         )
 
     )
+
 
 
     order = last_order(
@@ -684,17 +668,13 @@ async def reject_payment(
 
             chat_id=user_id,
 
+            text="""
+❌ پرداخت شما رد شد.
 
-            text=(
-
-                "❌ پرداخت شما رد شد.\n\n"
-
-                "در صورت اشتباه دوباره رسید ارسال کنید."
-
-            )
+در صورت نیاز دوباره رسید ارسال کنید.
+"""
 
         )
-
 
 
     await query.message.reply_text(
@@ -806,3 +786,11 @@ def register_handlers(app):
     app.add_handler(
 
         MessageHandler(
+
+            filters.PHOTO,
+
+            receipt_photo
+
+        )
+
+    )
