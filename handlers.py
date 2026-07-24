@@ -742,3 +742,158 @@ async def reject_payment(
         "✅ سفارش رد شد."
 
     )
+# =========================
+# آمار مدیریت
+# =========================
+
+async def admin_stats(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+    if query.from_user.id != ADMIN_ID:
+        return
+
+
+    await query.message.reply_text(
+
+        f"""
+📊 آمار Zeus Shop VPN
+
+
+👥 تعداد کاربران:
+
+{users_count()}
+
+
+
+💰 فروش تایید شده:
+
+{total_sales():,} تومان
+
+"""
+
+    )
+
+
+
+
+# =========================
+# ثبت Handler ها
+# =========================
+
+def register_handlers(app):
+
+
+    from telegram.ext import (
+
+        CommandHandler,
+
+        CallbackQueryHandler,
+
+        MessageHandler,
+
+        filters
+
+    )
+
+
+
+    # شروع
+
+    app.add_handler(
+
+        CommandHandler(
+
+            "start",
+
+            start
+
+        )
+
+    )
+
+
+
+    # خرید و منوی کاربر
+
+    app.add_handler(
+
+        CallbackQueryHandler(
+
+            button,
+
+            pattern="^(buy|plan_|my_service|support)$"
+
+        )
+
+    )
+
+
+
+    # تایید پرداخت
+
+    app.add_handler(
+
+        CallbackQueryHandler(
+
+            approve_payment,
+
+            pattern="^approve_"
+
+        )
+
+    )
+
+
+
+    # رد پرداخت
+
+    app.add_handler(
+
+        CallbackQueryHandler(
+
+            reject_payment,
+
+            pattern="^reject_"
+
+        )
+
+    )
+
+
+
+    # آمار
+
+    app.add_handler(
+
+        CallbackQueryHandler(
+
+            admin_stats,
+
+            pattern="^admin_stats$"
+
+        )
+
+    )
+
+
+
+    # دریافت رسید عکس
+
+    app.add_handler(
+
+        MessageHandler(
+
+            filters.PHOTO,
+
+            receipt_photo
+
+        )
+
+    )
