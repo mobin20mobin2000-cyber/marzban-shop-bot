@@ -71,7 +71,7 @@ def admin_panel():
 
 
 # =========================
-# دکمه رسید پرداخت
+# دکمه تایید رسید
 # =========================
 
 def admin_buttons(user_id):
@@ -99,7 +99,6 @@ def admin_buttons(user_id):
 
 
 
-
 # =========================
 # ساخت سرویس مرزبان
 # =========================
@@ -109,13 +108,9 @@ def create_subscription(volume):
     try:
 
         marzban = Marzban(
-
-            MARZBAN_URL,
-
-            MARZBAN_USERNAME,
-
-            MARZBAN_PASSWORD
-
+            host=MARZBAN_URL,
+            username=MARZBAN_USERNAME,
+            password=MARZBAN_PASSWORD
         )
 
 
@@ -150,14 +145,7 @@ def create_subscription(volume):
         )
 
 
-
-        if not subscription:
-
-            return None
-
-
-
-        if subscription.startswith("/"):
+        if subscription and subscription.startswith("/"):
 
             subscription = (
 
