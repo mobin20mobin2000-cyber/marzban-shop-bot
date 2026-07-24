@@ -677,3 +677,91 @@ def total_sales():
 
 
     return total or 0
+# =========================
+# آخرین سفارش کاربر
+# =========================
+
+def last_order(telegram_id):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE telegram_id=?
+
+        ORDER BY id DESC
+
+        LIMIT 1
+
+        """,
+        (
+            telegram_id,
+        )
+    )
+
+    order = cursor.fetchone()
+
+    db.close()
+
+    return order
+
+
+
+# =========================
+# حذف اشتراک
+# =========================
+
+def delete_subscription(telegram_id):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM subscriptions
+
+        WHERE telegram_id=?
+
+        """,
+        (
+            telegram_id,
+        )
+    )
+
+    db.commit()
+
+    db.close()
+
+
+
+# =========================
+# تعداد اشتراک‌ها
+# =========================
+
+def subscriptions_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+
+        FROM subscriptions
+
+        """
+    )
+
+    count = cursor.fetchone()[0]
+
+    db.close()
+
+    return count
