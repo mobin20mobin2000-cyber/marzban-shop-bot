@@ -9,6 +9,7 @@ import sqlite3
 DATABASE = "zeus.db"
 
 
+
 # =========================
 # اتصال دیتابیس
 # =========================
@@ -26,7 +27,7 @@ def get_db():
 
 
 # =========================
-# ساخت جدول‌ها
+# ساخت دیتابیس
 # =========================
 
 def init_db():
@@ -35,6 +36,8 @@ def init_db():
 
     cursor = db.cursor()
 
+
+    # کاربران
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
@@ -51,6 +54,8 @@ def init_db():
     """)
 
 
+
+    # سفارش ها
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS orders (
@@ -76,6 +81,8 @@ def init_db():
 
 
 
+    # اشتراک ها
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS subscriptions (
 
@@ -97,15 +104,18 @@ def init_db():
     """)
 
 
+
     db.commit()
 
     db.close()
 
 
 
+
 # =========================
 # کاربران
 # =========================
+
 
 def add_user(
     telegram_id,
@@ -122,8 +132,8 @@ def add_user(
         INSERT OR IGNORE INTO users
 
         (
-        telegram_id,
-        username
+            telegram_id,
+            username
         )
 
         VALUES (?,?)
@@ -140,6 +150,7 @@ def add_user(
     db.commit()
 
     db.close()
+
 
 
 
@@ -178,6 +189,7 @@ def get_user(
 
 
 
+
 def all_users():
 
     db = get_db()
@@ -207,6 +219,7 @@ def all_users():
 
 
 
+
 def users_count():
 
     db = get_db()
@@ -232,7 +245,7 @@ def users_count():
 
     return count
     # =========================
-# سفارش‌ها
+# سفارش ها
 # =========================
 
 
@@ -261,11 +274,11 @@ def create_order(
         INSERT INTO orders
 
         (
-        telegram_id,
-        plan,
-        volume,
-        days,
-        price
+            telegram_id,
+            plan,
+            volume,
+            days,
+            price
         )
 
         VALUES (?,?,?,?,?)
@@ -293,6 +306,8 @@ def create_order(
 
 
     return order_id
+
+
 
 
 
@@ -332,6 +347,8 @@ def get_order(
 
 
     return order
+
+
 
 
 
@@ -376,7 +393,7 @@ def user_orders(
 
 
 
-# آخرین سفارش کاربر
+
 
 def last_order(
 
@@ -421,7 +438,7 @@ def last_order(
 
 
 
-# سفارش‌های در انتظار پرداخت
+
 
 def pending_orders():
 
@@ -456,7 +473,12 @@ def pending_orders():
 
 
 
+
+
+# =========================
 # تایید پرداخت
+# =========================
+
 
 def approve_payment(
 
@@ -493,7 +515,12 @@ def approve_payment(
 
 
 
+
+
+# =========================
 # رد پرداخت
+# =========================
+
 
 def reject_payment(
 
@@ -530,7 +557,12 @@ def reject_payment(
 
 
 
+
+
+# =========================
 # حذف سفارش
+# =========================
+
 
 def delete_order(
 
@@ -562,75 +594,8 @@ def delete_order(
     db.commit()
 
     db.close()
-
-
-
-# =========================
-# آمار سفارش‌ها
-# =========================
-
-
-def sales_count():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-
-        """
-        SELECT COUNT(*)
-
-        FROM orders
-
-        WHERE payment_status='approved'
-
-        """
-
-    )
-
-
-    count = cursor.fetchone()[0]
-
-
-    db.close()
-
-
-    return count
-
-
-
-def total_sales():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-
-        """
-        SELECT SUM(price)
-
-        FROM orders
-
-        WHERE payment_status='approved'
-
-        """
-
-    )
-
-
-    total = cursor.fetchone()[0]
-
-
-    db.close()
-
-
-    return total or 0
     # =========================
-# اشتراک‌ها
+# اشتراک ها
 # =========================
 
 
@@ -659,11 +624,11 @@ def save_subscription(
         INSERT INTO subscriptions
 
         (
-        telegram_id,
-        order_id,
-        marzban_username,
-        subscription_url,
-        expire_date
+            telegram_id,
+            order_id,
+            marzban_username,
+            subscription_url,
+            expire_date
         )
 
         VALUES (?,?,?,?,?)
@@ -684,6 +649,8 @@ def save_subscription(
     db.commit()
 
     db.close()
+
+
 
 
 
@@ -730,6 +697,8 @@ def get_subscription(
 
 
 
+
+
 def all_subscriptions():
 
     db = get_db()
@@ -761,10 +730,6 @@ def all_subscriptions():
 
 
 
-# =========================
-# آمار کلی
-# =========================
-
 
 def subscriptions_count():
 
@@ -793,6 +758,84 @@ def subscriptions_count():
 
     return count
 
+
+
+
+
+# =========================
+# آمار فروش
+# =========================
+
+
+def sales_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+
+        """
+        SELECT COUNT(*)
+
+        FROM orders
+
+        WHERE payment_status='approved'
+
+        """
+
+    )
+
+
+    count = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return count
+
+
+
+
+
+def total_sales():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+
+        """
+        SELECT SUM(price)
+
+        FROM orders
+
+        WHERE payment_status='approved'
+
+        """
+
+    )
+
+
+    total = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return total or 0
+
+
+
+
+
+# =========================
+# آمار کامل پنل مدیریت
+# =========================
 
 
 def get_stats():
@@ -806,129 +849,5 @@ def get_stats():
         "subscriptions": subscriptions_count(),
 
         "income": total_sales()
-
-    }
-# =========================
-# سفارش آخر کاربر
-# =========================
-
-def last_order(
-    telegram_id
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT *
-
-        FROM orders
-
-        WHERE telegram_id=?
-
-        ORDER BY id DESC
-
-        LIMIT 1
-
-        """,
-
-        (
-            telegram_id,
-        )
-    )
-
-
-    order = cursor.fetchone()
-
-
-    db.close()
-
-
-    return order
-
-
-
-# =========================
-# حذف سفارش
-# =========================
-
-def delete_order(
-    order_id
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        DELETE FROM orders
-
-        WHERE id=?
-
-        """,
-
-        (
-            order_id,
-        )
-    )
-
-
-    db.commit()
-
-    db.close()
-
-
-
-# =========================
-# تعداد اشتراک‌ها
-# =========================
-
-def subscriptions_count():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT COUNT(*)
-
-        FROM subscriptions
-
-        """
-    )
-
-
-    count = cursor.fetchone()[0]
-
-
-    db.close()
-
-
-    return count
-
-
-
-# =========================
-# آمار کلی مدیریت
-# =========================
-
-def get_stats():
-
-    return {
-
-        "users": users_count(),
-
-        "sales": sales_count(),
-
-        "income": total_sales(),
-
-        "subscriptions": subscriptions_count()
 
     }
