@@ -10,7 +10,9 @@ from telegram import (
 
 from marzban import Marzban
 
-from config import MARZBAN_URL
+from config import (
+    MARZBAN_URL
+)
 
 
 # =========================
@@ -62,7 +64,7 @@ def admin_panel():
 
 
 # =========================
-# دکمه های تایید رسید
+# دکمه‌های تایید پرداخت
 # =========================
 
 def admin_buttons(order_id):
@@ -89,7 +91,7 @@ def admin_buttons(order_id):
 
 
 # =========================
-# ساخت اشتراک Marzban
+# ساخت اشتراک مرزبان
 # =========================
 
 def create_subscription(volume):
@@ -97,14 +99,20 @@ def create_subscription(volume):
     marzban = Marzban()
 
     user = marzban.create_user(
+
         username=None,
+
         data_limit=volume
+
     )
 
     if not user:
+
         return None
 
-    subscription = user.get("subscription_url")
+    subscription = user.get(
+        "subscription_url"
+    )
 
     if subscription and subscription.startswith("/"):
 
@@ -113,4 +121,12 @@ def create_subscription(volume):
             + subscription
         )
 
-   
+    return {
+
+        "username": user.get(
+            "username"
+        ),
+
+        "subscription": subscription
+
+    }
