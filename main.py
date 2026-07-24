@@ -20,19 +20,26 @@ from database import init_db
 
 def main():
 
+    if not BOT_TOKEN:
 
-    # ساخت دیتابیس و جدول‌ها
+        print(
+            "❌ BOT_TOKEN تنظیم نشده"
+        )
+
+        return
+
+
+
+    # ساخت دیتابیس
 
     init_db()
 
 
 
-    # ساخت ربات
+    # ساخت اپلیکیشن تلگرام
 
     app = Application.builder().token(
-
         BOT_TOKEN
-
     ).build()
 
 
@@ -40,9 +47,7 @@ def main():
     # ثبت Handler ها
 
     register_handlers(
-
         app
-
     )
 
 
@@ -60,7 +65,7 @@ def main():
 
 
 # =========================
-# شروع
+# شروع برنامه
 # =========================
 
 if __name__ == "__main__":
