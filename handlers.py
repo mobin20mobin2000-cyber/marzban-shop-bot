@@ -90,6 +90,7 @@ def user_menu():
 
     ]
 
+
     return InlineKeyboardMarkup(
         keyboard
     )
@@ -97,7 +98,7 @@ def user_menu():
 
 
 # =========================
-# منوی پلن‌ها
+# لیست پلن‌ها
 # =========================
 
 def plans_keyboard():
@@ -126,7 +127,7 @@ def plans_keyboard():
 
 
 # =========================
-# شروع ربات
+# start
 # =========================
 
 async def start(
@@ -164,10 +165,7 @@ async def start(
         reply_markup=user_menu()
 
     )
-
-
-
-# =========================
+    # =========================
 # مدیریت دکمه‌ها
 # =========================
 
@@ -187,9 +185,12 @@ async def button(
 
 
 
+    # =====================
     # خرید اشتراک
+    # =====================
 
     if data == "buy":
+
 
         await query.message.reply_text(
 
@@ -203,7 +204,9 @@ async def button(
 
 
 
+    # =====================
     # انتخاب پلن
+    # =====================
 
     if data.startswith("plan_"):
 
@@ -217,7 +220,9 @@ async def button(
         plan = get_plan(plan_id)
 
 
+
         if plan is None:
+
 
             await query.message.reply_text(
 
@@ -244,6 +249,7 @@ async def button(
         )
 
 
+
         await query.message.reply_text(
 
             get_payment_text(order_id)
@@ -254,14 +260,14 @@ async def button(
 
 ━━━━━━━━━━━━━━
 
-📦 پلن:
+📦 پلن انتخابی:
 
 {plan['name']}
 
 
 💾 حجم:
 
-{plan['volume']} GB
+{plan['volume']} گیگ
 
 
 ⏳ مدت:
@@ -278,6 +284,7 @@ async def button(
 
 {order_id}
 
+
 ━━━━━━━━━━━━━━
 
 
@@ -288,7 +295,11 @@ async def button(
         )
 
         return
-        # =========================
+
+
+
+
+# =========================
 # نمایش سرویس من
 # =========================
 
@@ -305,12 +316,17 @@ async def show_service(
     user_id = query.from_user.id
 
 
+
     service = get_subscription(
+
         user_id
+
     )
 
 
+
     if service is None:
+
 
         await query.message.reply_text(
 
@@ -343,36 +359,8 @@ f"""
 
 {service["expire_date"] or "نامشخص"}
 
-━━━━━━━━━━━━━━
-"""
-
-    )
-
-
-
-# =========================
-# پشتیبانی
-# =========================
-
-async def show_support(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    query = update.callback_query
-
-    await query.answer()
-
-
-    await query.message.reply_text(
-
-        SUPPORT_TEXT
-
-    )
-
-
-
-# =========================
+━━━━━━━━
+    # =========================
 # دریافت رسید پرداخت
 # =========================
 
@@ -390,6 +378,7 @@ async def receipt_photo(
 
 
     if order is None:
+
 
         await update.message.reply_text(
 
@@ -434,7 +423,7 @@ async def receipt_photo(
 
 💾 حجم:
 
-{order["volume"]} GB
+{order["volume"]} گیگ
 
 
 ⏳ مدت:
@@ -451,9 +440,7 @@ async def receipt_photo(
 
 
         reply_markup=admin_buttons(
-
             user_id
-
         )
 
     )
@@ -465,11 +452,16 @@ async def receipt_photo(
 """
 ✅ رسید شما دریافت شد.
 
-⏳ پس از تایید مدیریت، سرویس ساخته خواهد شد.
+⏳ پس از تایید مدیریت، سرویس ساخته می‌شود.
 """
 
     )
-    # =========================
+
+
+
+
+
+# =========================
 # تایید پرداخت
 # =========================
 
@@ -483,8 +475,6 @@ async def approve_payment(
     await query.answer()
 
 
-
-    # فقط ادمین
 
     if query.from_user.id != ADMIN_ID:
 
@@ -507,9 +497,7 @@ async def approve_payment(
 
 
     order = last_order(
-
         user_id
-
     )
 
 
@@ -527,7 +515,8 @@ async def approve_payment(
 
 
 
-    # ساخت سرویس در مرزبان
+
+    # ساخت کاربر در مرزبان
 
     result = create_subscription(
 
@@ -550,7 +539,8 @@ async def approve_payment(
 
 
 
-    # ذخیره سرویس در دیتابیس
+
+    # ذخیره سرویس
 
     save_subscription(
 
@@ -568,7 +558,8 @@ async def approve_payment(
 
 
 
-    # تغییر وضعیت پرداخت
+
+    # تغییر وضعیت سفارش
 
     db_approve_payment(
 
@@ -578,7 +569,8 @@ async def approve_payment(
 
 
 
-    # ارسال سرویس برای مشتری
+
+    # ارسال سرویس به کاربر
 
     await context.bot.send_message(
 
@@ -589,10 +581,10 @@ async def approve_payment(
 
 ━━━━━━━━━━━━━━
 
-🚀 سرویس شما آماده است.
+📦 سرویس شما آماده است.
 
 
-👤 نام کاربری مرزبان:
+👤 نام کاربری:
 
 {result["username"]}
 
@@ -604,7 +596,7 @@ async def approve_payment(
 
 ━━━━━━━━━━━━━━
 
-✅ ممنون از خرید شما ❤️
+❤️ ممنون از خرید شما
 """
 
     )
@@ -657,9 +649,7 @@ async def reject_payment(
 
 
     order = last_order(
-
         user_id
-
     )
 
 
@@ -679,7 +669,7 @@ async def reject_payment(
             chat_id=user_id,
 
             text="""
-❌ پرداخت شما تایید نشد.
+❌ پرداخت شما رد شد.
 
 در صورت اشتباه بودن، دوباره رسید ارسال کنید.
 """
@@ -716,7 +706,7 @@ def register_handlers(app):
 
 
 
-    # دکمه‌های خرید و پلن‌ها
+    # خرید و انتخاب پلن
 
     app.add_handler(
 
@@ -764,7 +754,7 @@ def register_handlers(app):
 
 
 
-    # تایید پرداخت ادمین
+    # تایید پرداخت
 
     app.add_handler(
 
@@ -780,7 +770,7 @@ def register_handlers(app):
 
 
 
-    # رد پرداخت ادمین
+    # رد پرداخت
 
     app.add_handler(
 
@@ -808,4 +798,9 @@ def register_handlers(app):
 
         )
 
+    )
+
+
+    print(
+        "✅ Handlers registered successfully"
     )
