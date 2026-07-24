@@ -69,27 +69,29 @@ def admin_panel():
 
 
 # =========================
-# تایید پرداخت
+# دکمه‌های سفارش
 # =========================
 
 def admin_buttons(order_id):
 
-
     keyboard = [
 
         [
+
             InlineKeyboardButton(
                 "✅ تایید پرداخت",
                 callback_data=f"approve_{order_id}"
             )
+
         ],
 
-
         [
+
             InlineKeyboardButton(
                 "❌ رد پرداخت",
                 callback_data=f"reject_{order_id}"
             )
+
         ]
 
     ]
@@ -112,12 +114,13 @@ def create_subscription(volume):
 
 
 
+    # ساخت کاربر در مرزبان
+
     user = marzban.create_user(
 
         data_limit=volume
 
     )
-
 
 
     if not user:
@@ -131,12 +134,33 @@ def create_subscription(volume):
     )
 
 
+    if not username:
+
+        return None
+
+
+
+    # گرفتن لینک اشتراک
 
     subscription = marzban.subscription(
 
         username
 
     )
+
+
+
+    if subscription and subscription.startswith("/"):
+
+        subscription = (
+
+            MARZBAN_URL.rstrip("/")
+
+            +
+
+            subscription
+
+        )
 
 
 
@@ -147,6 +171,5 @@ def create_subscription(volume):
 
 
         "subscription": subscription
-
 
     }
