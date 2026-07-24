@@ -392,3 +392,353 @@ async def button(
 
 
         return
+# =========================
+# دریافت رسید پرداخت
+# =========================
+
+async def receipt_photo(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    user_id = update.effective_user.id
+
+
+    orders = pending_orders()
+
+
+    user_order = None
+
+
+    for order in orders:
+
+        if order[1] == user_id:
+
+            user_order = order
+
+            break
+
+
+
+    if user_order is None:
+
+
+        await update.message.reply_text(
+
+            "❌ سفارش پرداختی پیدا نشد."
+
+        )
+
+        return
+
+
+
+    photo = update.message.photo[-1]
+
+
+
+    await context.bot.send_photo(
+
+        chat_id=ADMIN_ID,
+
+        photo=photo.file_id,
+
+
+        caption=f"""
+
+📥 رسید پرداخت جدید
+
+
+👤 کاربر:
+
+{user_id}
+
+
+
+🆔 سفارش:
+
+{user_order[0]}
+
+
+
+📦 پلن:
+
+{user_order[2]}
+
+
+
+💰 مبلغ:
+
+{user_order[5]:,} تومان
+
+
+
+برای تایید یا رد از پنل استفاده کنید.
+
+"""
+
+    )
+
+
+
+    await update.message.reply_text(
+
+        "✅ رسید شما ارسال شد.\n\n⏳ منتظر تایید مدیریت باشید."
+
+    )
+
+
+
+
+
+
+# =========================
+# تایید پرداخت
+# =========================
+
+async def approve_payment(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+
+    if query.from_user.id != ADMIN_ID:
+
+        return
+
+
+
+    order_id = int(
+
+        query.data.replace(
+
+            "approve_",
+
+            ""
+
+        )
+
+    )
+
+
+
+    order = get_order(
+
+        order_id
+
+    )
+
+
+
+    if not order:
+
+
+        await query.message.reply_text(
+
+            "❌ سفارش پیدا نشد."
+
+        )
+
+        return
+
+
+
+
+    telegram_id = order[1]
+
+    volume = order[3]
+
+
+
+
+    # ساخت کاربر مرزبان
+
+    marzban = Marzban()
+
+
+
+    user = marzban.create_user(
+
+        data_limit=volume
+
+    )
+
+
+
+    if not user:
+
+
+        await query.message.reply_text(
+
+            "❌ ساخت سرویس در مرزبان شکست خورد."
+
+        )
+
+        return
+
+
+
+    username = user.get(
+
+        "username"
+
+    )
+
+
+
+    subscription = marzban.subscription(
+
+        username
+
+    )
+
+
+
+
+    # ذخیره سرویس
+
+    save_subscription(
+
+        telegram_id,
+
+        order_id,
+
+        username,
+
+        subscription,
+
+        None
+
+    )
+
+
+
+    # تغییر وضعیت سفارش
+
+    db_approve_payment(
+
+        order_id
+
+    )
+
+
+
+
+    await context.bot.send_message(
+
+        chat_id=telegram_id,
+
+
+        text=f"""
+
+🎉 پرداخت شما تایید شد.
+
+
+🔐 سرویس شما آماده است.
+
+
+👤 نام کاربری:
+
+{username}
+
+
+
+🔗 لینک اتصال:
+
+{subscription}
+
+
+
+ممنون از اعتماد شما ❤️
+
+"""
+
+    )
+
+
+
+    await query.message.reply_text(
+
+        "✅ سرویس ساخته شد و برای مشتری ارسال شد."
+
+    )
+
+
+
+
+
+# =========================
+# رد پرداخت
+# =========================
+
+async def reject_payment(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+
+    order_id = int(
+
+        query.data.replace(
+
+            "reject_",
+
+            ""
+
+        )
+
+    )
+
+
+
+    order = get_order(
+
+        order_id
+
+    )
+
+
+
+    if order:
+
+
+        db_reject_payment(
+
+            order_id
+
+        )
+
+
+        await context.bot.send_message(
+
+            chat_id=order[1],
+
+
+            text="""
+
+❌ پرداخت شما رد شد.
+
+
+در صورت اشتباه، دوباره رسید ارسال کنید.
+
+"""
+
+        )
+
+
+
+    await query.message.reply_text(
+
+        "✅ سفارش رد شد."
+
+    )
