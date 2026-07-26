@@ -1,6 +1,6 @@
 # =========================
 # admin.py
-# Zeus Shop VPN
+# Zeus Shop VPN PRO
 # =========================
 
 
@@ -10,15 +10,26 @@ from telegram import (
 )
 
 
+from config import (
+    MARZBAN_URL
+)
+
+
+from database import (
+    get_stats,
+    pending_orders,
+    subscriptions_count
+)
+
+
 from marzban import Marzban
 
-from config import MARZBAN_URL
-
 
 
 # =========================
-# پنل مدیریت حرفه‌ای
+# پنل اصلی مدیریت
 # =========================
+
 
 def admin_panel():
 
@@ -44,6 +55,7 @@ def admin_panel():
                 "👥 کاربران",
                 callback_data="admin_users"
             )
+
         ],
 
 
@@ -57,6 +69,7 @@ def admin_panel():
                 "💳 پرداخت‌ها",
                 callback_data="admin_payments"
             )
+
         ],
 
 
@@ -65,14 +78,16 @@ def admin_panel():
                 "📢 پیام همگانی",
                 callback_data="broadcast"
             )
+
         ],
 
 
         [
             InlineKeyboardButton(
-                "🖥 مدیریت پنل‌ها",
+                "🖥 پنل‌ها",
                 callback_data="admin_panels"
             )
+
         ],
 
 
@@ -81,6 +96,7 @@ def admin_panel():
                 "⚙️ تنظیمات",
                 callback_data="settings"
             )
+
         ]
 
     ]
@@ -93,18 +109,21 @@ def admin_panel():
 
 
 # =========================
-# دکمه برگشت ادمین
+# برگشت
 # =========================
+
 
 def back_admin():
 
     return InlineKeyboardMarkup([
 
         [
+
             InlineKeyboardButton(
                 "🔙 بازگشت",
                 callback_data="admin_back"
             )
+
         ]
 
     ])
@@ -112,25 +131,34 @@ def back_admin():
 # دکمه تایید رسید پرداخت
 # =========================
 
+
 def admin_buttons(user_id):
+
 
     keyboard = [
 
+
         [
+
             InlineKeyboardButton(
                 "✅ تایید پرداخت",
                 callback_data=f"approve_{user_id}"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "❌ رد پرداخت",
                 callback_data=f"reject_{user_id}"
             )
+
         ]
 
     ]
+
 
     return InlineKeyboardMarkup(
         keyboard
@@ -138,33 +166,36 @@ def admin_buttons(user_id):
 
 
 
+
+
 # =========================
 # داشبورد مدیریت
 # =========================
 
-def admin_dashboard(
-    users=0,
-    sales=0,
-    active=0,
-    pending=0
-):
+
+def admin_dashboard():
+
+
+    stats = get_stats()
+
+
 
     text = f"""
 👑 داشبورد Zeus Shop VPN
 
 ━━━━━━━━━━━━━━
 
-👥 کاربران:
-{users}
+👥 تعداد کاربران:
+{stats['users']}
 
-💰 فروش کل:
-{sales:,} تومان
+💰 فروش تایید شده:
+{stats['income']:,} تومان
 
-🟢 سرویس فعال:
-{active}
+🛒 تعداد فروش:
+{stats['sales']}
 
-⏳ پرداخت در انتظار:
-{pending}
+🌐 سرویس فعال:
+{stats['subscriptions']}
 
 ━━━━━━━━━━━━━━
 """
@@ -172,33 +203,47 @@ def admin_dashboard(
 
     keyboard = [
 
+
         [
+
             InlineKeyboardButton(
                 "🔄 بروزرسانی",
                 callback_data="admin_stats"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "🔙 بازگشت",
                 callback_data="admin_back"
             )
+
         ]
 
     ]
 
 
     return (
+
         text,
-        InlineKeyboardMarkup(keyboard)
+
+        InlineKeyboardMarkup(
+            keyboard
+        )
+
     )
+
+
 
 
 
 # =========================
 # منوی کاربران
 # =========================
+
 
 def users_menu():
 
@@ -207,26 +252,42 @@ def users_menu():
 
 
         [
-            InlineKeyboardButton(
-                "🔍 جستجوی کاربر",
-                callback_data="search_user"
-            )
-        ],
 
-
-        [
             InlineKeyboardButton(
                 "📋 لیست کاربران",
                 callback_data="users_list"
             )
+
         ],
 
 
         [
+
+            InlineKeyboardButton(
+                "🔍 جستجو کاربر",
+                callback_data="search_user"
+            )
+
+        ],
+
+
+        [
+
+            InlineKeyboardButton(
+                "🚫 مسدود کردن",
+                callback_data="block_user"
+            )
+
+        ],
+
+
+        [
+
             InlineKeyboardButton(
                 "🔙 بازگشت",
                 callback_data="admin_back"
             )
+
         ]
 
     ]
@@ -235,6 +296,8 @@ def users_menu():
     return InlineKeyboardMarkup(
         keyboard
     )
+
+
 
 
 
@@ -242,30 +305,40 @@ def users_menu():
 # منوی سفارش‌ها
 # =========================
 
+
 def orders_menu():
 
 
     keyboard = [
 
-        [
-            InlineKeyboardButton(
-                "⏳ سفارش‌های جدید",
-                callback_data="pending_orders"
-            )
-        ],
 
         [
+
+            InlineKeyboardButton(
+                "⏳ سفارش‌های در انتظار",
+                callback_data="pending_orders"
+            )
+
+        ],
+
+
+        [
+
             InlineKeyboardButton(
                 "📦 همه سفارش‌ها",
                 callback_data="all_orders"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "🔙 بازگشت",
                 callback_data="admin_back"
             )
+
         ]
 
     ]
@@ -275,86 +348,63 @@ def orders_menu():
         keyboard
     )
     # =========================
-# مدیریت پنل‌ها
-# =========================
-
-def panels_menu():
-
-
-    keyboard = [
-
-        [
-            InlineKeyboardButton(
-                "🟢 Marzban",
-                callback_data="panel_marzban"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "⚡ 3x-ui",
-                callback_data="panel_3xui"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "➕ افزودن پنل",
-                callback_data="add_panel"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "🔙 بازگشت",
-                callback_data="admin_back"
-            )
-        ]
-
-    ]
-
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
-
-
-
-# =========================
 # مدیریت سرویس‌ها
 # =========================
+
 
 def services_menu():
 
 
     keyboard = [
 
+
         [
+
             InlineKeyboardButton(
                 "🟢 سرویس‌های فعال",
                 callback_data="active_services"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "⏳ سرویس‌های منقضی",
                 callback_data="expired_services"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "🔄 تمدید سرویس",
                 callback_data="renew_service"
             )
+
         ],
 
+
         [
+
+            InlineKeyboardButton(
+                "🗑 حذف سرویس",
+                callback_data="delete_service"
+            )
+
+        ],
+
+
+        [
+
             InlineKeyboardButton(
                 "🔙 بازگشت",
                 callback_data="admin_back"
             )
+
         ]
 
     ]
@@ -363,6 +413,8 @@ def services_menu():
     return InlineKeyboardMarkup(
         keyboard
     )
+
+
 
 
 
@@ -370,37 +422,50 @@ def services_menu():
 # مدیریت پرداخت‌ها
 # =========================
 
+
 def payments_menu():
 
 
     keyboard = [
 
+
         [
+
             InlineKeyboardButton(
                 "⏳ پرداخت‌های در انتظار",
                 callback_data="pending_payments"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
-                "✅ پرداخت‌های تایید شده",
+                "✅ پرداخت تایید شده",
                 callback_data="approved_payments"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
-                "❌ پرداخت‌های رد شده",
+                "❌ پرداخت رد شده",
                 callback_data="rejected_payments"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "🔙 بازگشت",
                 callback_data="admin_back"
             )
+
         ]
 
     ]
@@ -409,6 +474,69 @@ def payments_menu():
     return InlineKeyboardMarkup(
         keyboard
     )
+
+
+
+
+
+# =========================
+# مدیریت پنل‌ها
+# =========================
+
+
+def panels_menu():
+
+
+    keyboard = [
+
+
+        [
+
+            InlineKeyboardButton(
+                "🟢 Marzban",
+                callback_data="panel_marzban"
+            )
+
+        ],
+
+
+        [
+
+            InlineKeyboardButton(
+                "⚡ 3x-ui",
+                callback_data="panel_3xui"
+            )
+
+        ],
+
+
+        [
+
+            InlineKeyboardButton(
+                "➕ افزودن پنل",
+                callback_data="add_panel"
+            )
+
+        ],
+
+
+        [
+
+            InlineKeyboardButton(
+                "🔙 بازگشت",
+                callback_data="admin_back"
+            )
+
+        ]
+
+    ]
+
+
+    return InlineKeyboardMarkup(
+        keyboard
+    )
+
+
 
 
 
@@ -416,30 +544,50 @@ def payments_menu():
 # تنظیمات
 # =========================
 
+
 def settings_menu():
 
 
     keyboard = [
 
+
         [
+
             InlineKeyboardButton(
                 "💳 تغییر شماره کارت",
                 callback_data="change_card"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "📢 تغییر کانال",
                 callback_data="change_channel"
             )
+
         ],
 
+
         [
+
+            InlineKeyboardButton(
+                "🔗 تنظیم مرزبان",
+                callback_data="marzban_settings"
+            )
+
+        ],
+
+
+        [
+
             InlineKeyboardButton(
                 "🔙 بازگشت",
                 callback_data="admin_back"
             )
+
         ]
 
     ]
@@ -447,40 +595,48 @@ def settings_menu():
 
     return InlineKeyboardMarkup(
         keyboard
-    )
+            )
     # =========================
 # ساخت سرویس مرزبان
 # =========================
 
-def create_subscription(volume):
+
+def create_subscription(
+    volume
+):
 
     try:
+
 
         marzban = Marzban()
 
 
-        # =========================
-        # ورود به مرزبان
-        # =========================
 
-        if not marzban.login():
+        # ورود به پنل
+
+        login = marzban.login()
+
+
+        if not login:
+
 
             print(
-                "❌ Marzban Login Failed"
+                "❌ Marzban login failed"
             )
 
             return None
 
 
+
+
         print(
-            "✅ Marzban Login Success"
+            "✅ Marzban login success"
         )
 
 
 
-        # =========================
         # ساخت کاربر
-        # =========================
+
 
         user = marzban.create_user(
 
@@ -491,13 +647,16 @@ def create_subscription(volume):
         )
 
 
+
         if not user:
 
+
             print(
-                "❌ User creation failed"
+                "❌ Create user failed"
             )
 
             return None
+
 
 
 
@@ -509,6 +668,7 @@ def create_subscription(volume):
 
         if not username:
 
+
             print(
                 "❌ Username not found"
             )
@@ -517,34 +677,42 @@ def create_subscription(volume):
 
 
 
+
         print(
-            f"✅ User Created: {username}"
-        )
-
-
-
-        # =========================
-        # گرفتن لینک اشتراک
-        # =========================
-
-        subscription = marzban.subscription(
+            "✅ Created:",
             username
         )
 
 
+
+        # دریافت لینک اشتراک
+
+
+        subscription = marzban.subscription(
+
+            username
+
+        )
+
+
+
         if not subscription:
 
+
             print(
-                "❌ Subscription link failed"
+                "❌ Subscription empty"
             )
 
             return None
 
 
 
-        # اگر لینک نسبی بود
+
+        # کامل کردن لینک
+
 
         if subscription.startswith("/"):
+
 
             subscription = (
 
@@ -558,13 +726,21 @@ def create_subscription(volume):
 
 
 
+
         return {
 
-            "username": username,
 
-            "subscription": subscription
+            "username":
+
+                username,
+
+
+            "subscription":
+
+                subscription
 
         }
+
 
 
 
@@ -572,9 +748,81 @@ def create_subscription(volume):
 
 
         print(
+
             "❌ Marzban Error:",
+
             e
+
         )
 
 
         return None
+
+
+
+
+
+# =========================
+# اطلاعات پنل
+# =========================
+
+
+def panel_info():
+
+
+    return """
+
+🖥 اطلاعات پنل‌ها
+
+━━━━━━━━━━━━━━
+
+🟢 Marzban:
+فعال
+
+⚡ 3x-ui:
+غیرفعال
+
+━━━━━━━━━━━━━━
+
+"""
+
+
+
+
+
+# =========================
+# پیام همگانی
+# =========================
+
+
+def broadcast_menu():
+
+
+    keyboard = [
+
+
+        [
+
+            InlineKeyboardButton(
+                "📢 ارسال پیام",
+                callback_data="send_broadcast"
+            )
+
+        ],
+
+
+        [
+
+            InlineKeyboardButton(
+                "🔙 بازگشت",
+                callback_data="admin_back"
+            )
+
+        ]
+
+    ]
+
+
+    return InlineKeyboardMarkup(
+        keyboard
+    )
