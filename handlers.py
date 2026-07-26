@@ -645,9 +645,5 @@ def register_handlers(app):
             receipt_photo
         )
     )
-app.add_handler(
-    CallbackQueryHandler(
-        button,
-        pattern="^(buy|plan_.*|check_join)$"
-    )
-)
+
+    print("✅ Handlers registered successfully")
