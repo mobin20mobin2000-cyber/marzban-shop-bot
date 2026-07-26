@@ -1,73 +1,80 @@
-# =========================
+# ==========================================================
 # main.py
 # Zeus Shop VPN
-# =========================
-
+# Telegram Bot
+# ==========================================================
 
 from telegram.ext import Application
 
 from config import BOT_TOKEN
-
+from database import init_db
 from handlers import register_handlers
 
-from database import init_db
+
+# ==========================================================
+# ساخت برنامه
+# ==========================================================
+
+def build_application():
+
+    application = (
+        Application
+        .builder()
+        .token(BOT_TOKEN)
+        .build()
+    )
+
+    register_handlers(application)
+
+    return application
 
 
-
-# =========================
+# ==========================================================
 # اجرای ربات
-# =========================
+# ==========================================================
 
 def main():
 
+    print("=" * 50)
+    print("🚀 Zeus Shop VPN")
+    print("=" * 50)
+
     if not BOT_TOKEN:
-
-        print(
-            "❌ BOT_TOKEN تنظیم نشده"
-        )
-
+        print("❌ BOT_TOKEN یافت نشد.")
         return
 
-
-
-    # ساخت دیتابیس
-
+    print("📂 Initializing Database...")
     init_db()
 
+    print("🤖 Building Telegram Application...")
+    application = build_application()
 
+    print("✅ Config loaded successfully")
+    print("🚀 Zeus Shop VPN Bot Started")
+    print("⏳ Waiting for users...")
 
-    # ساخت اپلیکیشن تلگرام
-
-    app = Application.builder().token(
-        BOT_TOKEN
-    ).build()
-
-
-
-    # ثبت Handler ها
-
-    register_handlers(
-        app
+    application.run_polling(
+        poll_interval=1.0,
+        timeout=30,
+        bootstrap_retries=5,
+        drop_pending_updates=True,
+        allowed_updates=None,
+        close_loop=False,
     )
 
 
-
-    print(
-        "🚀 Zeus Shop VPN Bot Started"
-    )
-
-
-
-    # اجرای ربات
-
-    app.run_polling()
-
-
-
-# =========================
+# ==========================================================
 # شروع برنامه
-# =========================
+# ==========================================================
 
 if __name__ == "__main__":
 
-    main()
+    try:
+        main()
+
+    except KeyboardInterrupt:
+        print("🛑 Bot Stopped")
+
+    except Exception as error:
+        print(f"❌ Fatal Error: {error}")
+        raise
