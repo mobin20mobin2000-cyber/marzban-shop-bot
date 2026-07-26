@@ -23,12 +23,17 @@ ADMIN_ID = int(
 )
 
 # =========================
-# Channel (اجباری)
+# Channel (عضویت اجباری)
 # =========================
 
+# بدون @
 CHANNEL_USERNAME = "Vpn1_v2rayNG"
 
-CHANNEL_ID = "Vpn1_v2rayNG"
+# با @
+CHANNEL_ID = "@Vpn1_v2rayNG"
+
+# لینک کانال
+CHANNEL_LINK = "https://t.me/Vpn1_v2rayNG"
 
 # =========================
 # Marzban
@@ -77,7 +82,7 @@ def check_config():
         print("❌ تنظیمات ناقص است:")
 
         for error in errors:
-            print(" -", error)
+            print(f" - {error}")
 
         sys.exit()
 
