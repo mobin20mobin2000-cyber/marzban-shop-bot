@@ -6,7 +6,6 @@
 import os
 import sys
 
-
 # =========================
 # Telegram
 # =========================
@@ -23,6 +22,13 @@ ADMIN_ID = int(
     )
 )
 
+# =========================
+# Channel (اجباری)
+# =========================
+
+CHANNEL_USERNAME = "Vpn1_v2rayNG"
+
+CHANNEL_ID = "@Vpn1_v2rayNG"
 
 # =========================
 # Marzban
@@ -43,7 +49,6 @@ MARZBAN_PASSWORD = os.getenv(
     ""
 )
 
-
 # =========================
 # بررسی تنظیمات
 # =========================
@@ -52,55 +57,31 @@ def check_config():
 
     errors = []
 
-
     if not BOT_TOKEN:
-        errors.append(
-            "BOT_TOKEN"
-        )
-
+        errors.append("BOT_TOKEN")
 
     if not ADMIN_ID:
-        errors.append(
-            "ADMIN_ID"
-        )
-
+        errors.append("ADMIN_ID")
 
     if not MARZBAN_URL:
-        errors.append(
-            "MARZBAN_URL"
-        )
-
+        errors.append("MARZBAN_URL")
 
     if not MARZBAN_USERNAME:
-        errors.append(
-            "MARZBAN_USERNAME"
-        )
-
+        errors.append("MARZBAN_USERNAME")
 
     if not MARZBAN_PASSWORD:
-        errors.append(
-            "MARZBAN_PASSWORD"
-        )
-
+        errors.append("MARZBAN_PASSWORD")
 
     if errors:
 
-        print(
-            "❌ تنظیمات ناقص است:"
-        )
+        print("❌ تنظیمات ناقص است:")
 
         for error in errors:
-            print(
-                " -",
-                error
-            )
+            print(" -", error)
 
         sys.exit()
 
-
-    print(
-        "✅ Config loaded successfully"
-    )
+    print("✅ Config loaded successfully")
 
 
 check_config()
