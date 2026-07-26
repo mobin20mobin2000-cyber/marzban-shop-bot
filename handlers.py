@@ -646,4 +646,4 @@ def register_handlers(app):
         )
     )
 
-    print("✅ Handlers registered successfully")
+    pattern="^(buy|plan_.*|check_join)$"
