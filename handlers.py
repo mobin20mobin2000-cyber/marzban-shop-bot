@@ -19,7 +19,6 @@ from telegram.ext import (
 
 from config import (
     ADMIN_ID,
-    CHANNEL_USERNAME,
     CHANNEL_ID,
     CHANNEL_LINK
 )
@@ -59,7 +58,10 @@ from admin import (
 # عضویت اجباری کانال
 # =========================
 
-async def is_joined(context, user_id):
+async def is_joined(
+    context,
+    user_id
+):
 
     try:
 
@@ -74,7 +76,7 @@ async def is_joined(context, user_id):
             "creator"
         )
 
-    except:
+    except Exception:
 
         return False
 
@@ -100,10 +102,71 @@ def join_channel_keyboard():
     ]
 
     return InlineKeyboardMarkup(keyboard)
-    # =========================
-# شروع ربات
+
+
+# =========================
+# منوی کاربر
 # =========================
 
+def user_menu():
+
+    keyboard = [
+
+        [
+            InlineKeyboardButton(
+                "🛒 خرید اشتراک",
+                callback_data="buy"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "📦 سرویس من",
+                callback_data="my_service"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "💬 پشتیبانی",
+                callback_data="support"
+            )
+        ]
+
+    ]
+
+    return InlineKeyboardMarkup(keyboard)
+
+
+# =========================
+# منوی پلن‌ها
+# =========================
+
+def plans_keyboard():
+
+    keyboard = []
+
+    for key, plan in PLANS.items():
+
+        keyboard.append(
+
+            [
+
+                InlineKeyboardButton(
+                    f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
+                    callback_data=f"plan_{key}"
+                )
+
+            ]
+
+        )
+
+    return InlineKeyboardMarkup(keyboard)
+
+
+# =========================
+# شروع ربات
+# =========================
 async def start(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
@@ -133,13 +196,8 @@ async def start(
     ):
 
         await update.message.reply_text(
-            """
-🔒 برای استفاده از ربات ابتدا باید در کانال ما عضو شوید.
-
-بعد از عضویت روی دکمه
-«✅ بررسی عضویت»
-کلیک کنید.
-""",
+            "🔒 برای استفاده از ربات ابتدا در کانال عضو شوید.\n\n"
+            "بعد از عضویت روی دکمه «✅ بررسی عضویت» کلیک کنید.",
             reply_markup=join_channel_keyboard()
         )
 
@@ -150,57 +208,442 @@ async def start(
         WELCOME_TEXT,
         reply_markup=user_menu()
     )
-    # =====================
-# بررسی عضویت کانال
-# =====================
 
-if data == "check_join":
 
-    if await is_joined(
+# =========================
+# مدیریت دکمه‌ها
+# =========================
+
+async def button(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    user_id = query.from_user.id
+    data = query.data
+
+    # بررسی عضویت
+    if data == "check_join":
+
+        if await is_joined(
+            context,
+            user_id
+        ):
+
+            await query.message.reply_text(
+                "✅ عضویت شما تایید شد.",
+                reply_markup=user_menu()
+            )
+
+        else:
+
+            await query.answer(
+                "❌ هنوز عضو کانال نشده‌اید.",
+                show_alert=True
+            )
+
+        return
+
+    # جلوگیری از استفاده بدون عضویت
+    if not await is_joined(
         context,
         user_id
     ):
 
         await query.message.reply_text(
-            "✅ عضویت شما تایید شد.",
-            reply_markup=user_menu()
+            "⚠️ ابتدا در کانال عضو شوید.",
+            reply_markup=join_channel_keyboard()
         )
 
-    else:
+        return
 
-        await query.answer(
-            "❌ هنوز عضو کانال نشده‌اید.",
-            show_alert=True
+    # خرید اشتراک
+    if data == "buy":
+
+        await query.message.reply_text(
+            "📦 لطفاً پلن مورد نظر را انتخاب کنید:",
+            reply_markup=plans_keyboard()
         )
 
-    return
+        return
 
+    # انتخاب پلن
+    if data.startswith("plan_"):
 
-# =====================
-# جلوگیری از استفاده بدون عضویت
-# =====================
+        plan_id = data.replace(
+            "plan_",
+            ""
+        )
 
-if not await is_joined(
-    context,
-    user_id
+        plan = get_plan(plan_id)
+
+        if plan is None:
+
+            await query.message.reply_text(
+                "❌ پلن پیدا نشد."
+            )
+
+            return
+
+        order_id = create_order(
+            user_id,
+            plan["name"],
+            plan["volume"],
+            plan["days"],
+            plan["price"]
+        )
+
+        await query.message.reply_text(
+
+            get_payment_text(order_id)
+
+            +
+
+            f"""
+
+━━━━━━━━━━━━━━
+
+📦 پلن:
+{plan['name']}
+
+💾 حجم:
+{plan['volume']} گیگ
+
+⏳ مدت:
+{plan['days']} روز
+
+💰 مبلغ:
+{plan['price']:,} تومان
+
+🧾 شماره سفارش:
+{order_id}
+
+━━━━━━━━━━━━━━
+
+📸 بعد از پرداخت، عکس رسید را ارسال کنید.
+
+"""
+
+        )
+
+        return
+        # =========================
+# نمایش سرویس من
+# =========================
+
+async def show_service(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
 ):
 
-    await query.message.reply_text(
-        "⚠️ ابتدا در کانال عضو شوید.",
-        reply_markup=join_channel_keyboard()
-    )
+    query = update.callback_query
+    await query.answer()
 
-    return
-    # خرید، پلن‌ها و بررسی عضویت
+    user_id = query.from_user.id
 
-app.add_handler(
+    service = get_subscription(user_id)
 
-    CallbackQueryHandler(
+    if service is None:
 
-        button,
-
-        pattern="^(buy|plan_|check_join)"
-
-    )
-
+        await query.message.reply_text(
+            "❌ هنوز سرویس فعالی ندارید."
         )
+
+        return
+
+    await query.message.reply_text(
+f"""
+🔐 سرویس من
+
+━━━━━━━━━━━━━━
+
+👤 نام کاربری مرزبان:
+{service["marzban_username"]}
+
+🔗 لینک اشتراک:
+{service["subscription_url"]}
+
+📅 تاریخ انقضا:
+{service["expire_date"] or "نامشخص"}
+
+━━━━━━━━━━━━━━
+"""
+    )
+
+
+# =========================
+# پشتیبانی
+# =========================
+
+async def show_support(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+    await query.answer()
+
+    await query.message.reply_text(
+        SUPPORT_TEXT
+    )
+
+
+# =========================
+# دریافت رسید پرداخت
+# =========================
+
+async def receipt_photo(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    user_id = update.effective_user.id
+
+    order = last_order(user_id)
+
+    if order is None:
+
+        await update.message.reply_text(
+            "❌ ابتدا یک سفارش ثبت کنید."
+        )
+
+        return
+
+    photo = update.message.photo[-1]
+
+    await context.bot.send_photo(
+
+        chat_id=ADMIN_ID,
+
+        photo=photo.file_id,
+
+        caption=f"""
+📥 رسید پرداخت جدید
+
+━━━━━━━━━━━━━━
+
+👤 کاربر:
+{user_id}
+
+🧾 سفارش:
+{order['id']}
+
+📦 پلن:
+{order['plan']}
+
+💾 حجم:
+{order['volume']} گیگ
+
+⏳ مدت:
+{order['days']} روز
+
+💰 مبلغ:
+{order['price']:,} تومان
+
+━━━━━━━━━━━━━━
+""",
+
+        reply_markup=admin_buttons(user_id)
+
+    )
+
+    await update.message.reply_text(
+"""
+✅ رسید شما دریافت شد.
+
+⏳ منتظر تایید مدیریت باشید.
+"""
+    )
+
+
+# =========================
+# تایید پرداخت
+# =========================
+
+async def approve_payment(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+    await query.answer()
+
+    if query.from_user.id != ADMIN_ID:
+        return
+
+    user_id = int(
+        query.data.replace(
+            "approve_",
+            ""
+        )
+    )
+
+    order = last_order(user_id)
+
+    if order is None:
+
+        await query.message.reply_text(
+            "❌ سفارش پیدا نشد."
+        )
+
+        return
+
+    result = create_subscription(
+        order["volume"]
+    )
+
+    if result is None:
+
+        await query.message.reply_text(
+            "❌ خطا در ساخت سرویس مرزبان."
+        )
+
+        return
+
+    save_subscription(
+        user_id,
+        order["id"],
+        result["username"],
+        result["subscription"],
+        None
+    )
+
+    db_approve_payment(
+        order["id"]
+    )
+
+    await context.bot.send_message(
+        chat_id=user_id,
+        text=f"""
+🎉 پرداخت شما تایید شد.
+
+━━━━━━━━━━━━━━
+
+📦 سرویس شما آماده است.
+
+👤 نام کاربری:
+{result["username"]}
+
+🔗 لینک اشتراک:
+{result["subscription"]}
+
+━━━━━━━━━━━━━━
+
+❤️ ممنون از خرید شما
+"""
+    )
+
+    await query.message.reply_text(
+        "✅ سرویس ساخته شد و برای کاربر ارسال گردید."
+        )
+    # =========================
+# رد پرداخت
+# =========================
+
+async def reject_payment(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+    await query.answer()
+
+    if query.from_user.id != ADMIN_ID:
+        return
+
+    user_id = int(
+        query.data.replace(
+            "reject_",
+            ""
+        )
+    )
+
+    order = last_order(user_id)
+
+    if order:
+
+        db_reject_payment(
+            order["id"]
+        )
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="""
+❌ پرداخت شما رد شد.
+
+در صورت اشتباه بودن، دوباره رسید ارسال کنید.
+"""
+        )
+
+    await query.message.reply_text(
+        "✅ پرداخت رد شد."
+    )
+
+
+# =========================
+# ثبت Handler ها
+# =========================
+
+def register_handlers(app):
+
+    # start
+    app.add_handler(
+        CommandHandler(
+            "start",
+            start
+        )
+    )
+
+    # خرید، پلن‌ها و بررسی عضویت
+    app.add_handler(
+        CallbackQueryHandler(
+            button,
+            pattern="^(buy|plan_|check_join)"
+        )
+    )
+
+    # سرویس من
+    app.add_handler(
+        CallbackQueryHandler(
+            show_service,
+            pattern="^my_service$"
+        )
+    )
+
+    # پشتیبانی
+    app.add_handler(
+        CallbackQueryHandler(
+            show_support,
+            pattern="^support$"
+        )
+    )
+
+    # تایید پرداخت
+    app.add_handler(
+        CallbackQueryHandler(
+            approve_payment,
+            pattern="^approve_"
+        )
+    )
+
+    # رد پرداخت
+    app.add_handler(
+        CallbackQueryHandler(
+            reject_payment,
+            pattern="^reject_"
+        )
+    )
+
+    # دریافت رسید پرداخت
+    app.add_handler(
+        MessageHandler(
+            filters.PHOTO,
+            receipt_photo
+        )
+    )
+
+    print("✅ Handlers registered successfully")
