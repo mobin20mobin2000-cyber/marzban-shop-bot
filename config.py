@@ -28,7 +28,7 @@ ADMIN_ID = int(
 
 CHANNEL_USERNAME = "Vpn1_v2rayNG"
 
-CHANNEL_ID = "@Vpn1_v2rayNG"
+CHANNEL_ID = "Vpn1_v2rayNG"
 
 # =========================
 # Marzban
