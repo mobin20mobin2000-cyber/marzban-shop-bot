@@ -10,15 +10,11 @@ from telegram import (
 )
 
 
-from config import (
-    MARZBAN_URL
-)
+from config import MARZBAN_URL
 
 
 from database import (
-    get_stats,
-    pending_orders,
-    subscriptions_count
+    get_stats
 )
 
 
@@ -30,12 +26,9 @@ from marzban import Marzban
 # پنل اصلی مدیریت
 # =========================
 
-
 def admin_panel():
 
-
     keyboard = [
-
 
         [
             InlineKeyboardButton(
@@ -47,15 +40,14 @@ def admin_panel():
 
         [
             InlineKeyboardButton(
-                "📋 سفارش‌ها",
-                callback_data="admin_orders"
+                "👥 کاربران",
+                callback_data="admin_users"
             ),
 
             InlineKeyboardButton(
-                "👥 کاربران",
-                callback_data="admin_users"
+                "📋 سفارش‌ها",
+                callback_data="admin_orders"
             )
-
         ],
 
 
@@ -69,7 +61,14 @@ def admin_panel():
                 "💳 پرداخت‌ها",
                 callback_data="admin_payments"
             )
+        ],
 
+
+        [
+            InlineKeyboardButton(
+                "🖥 مدیریت پنل‌ها",
+                callback_data="admin_panels"
+            )
         ],
 
 
@@ -78,16 +77,6 @@ def admin_panel():
                 "📢 پیام همگانی",
                 callback_data="broadcast"
             )
-
-        ],
-
-
-        [
-            InlineKeyboardButton(
-                "🖥 پنل‌ها",
-                callback_data="admin_panels"
-            )
-
         ],
 
 
@@ -96,7 +85,6 @@ def admin_panel():
                 "⚙️ تنظیمات",
                 callback_data="settings"
             )
-
         ]
 
     ]
@@ -111,7 +99,6 @@ def admin_panel():
 # =========================
 # برگشت
 # =========================
-
 
 def back_admin():
 
@@ -128,15 +115,12 @@ def back_admin():
 
     ])
     # =========================
-# دکمه تایید رسید پرداخت
+# دکمه تایید و رد پرداخت
 # =========================
-
 
 def admin_buttons(user_id):
 
-
     keyboard = [
-
 
         [
 
@@ -146,7 +130,6 @@ def admin_buttons(user_id):
             )
 
         ],
-
 
         [
 
@@ -166,18 +149,13 @@ def admin_buttons(user_id):
 
 
 
-
-
 # =========================
 # داشبورد مدیریت
 # =========================
 
-
 def admin_dashboard():
 
-
     stats = get_stats()
-
 
 
     text = f"""
@@ -185,24 +163,23 @@ def admin_dashboard():
 
 ━━━━━━━━━━━━━━
 
-👥 تعداد کاربران:
+👥 کاربران:
 {stats['users']}
 
-💰 فروش تایید شده:
-{stats['income']:,} تومان
-
-🛒 تعداد فروش:
+🛒 فروش موفق:
 {stats['sales']}
 
 🌐 سرویس فعال:
 {stats['subscriptions']}
+
+💰 درآمد:
+{stats['income']:,} تومان
 
 ━━━━━━━━━━━━━━
 """
 
 
     keyboard = [
-
 
         [
 
@@ -212,7 +189,6 @@ def admin_dashboard():
             )
 
         ],
-
 
         [
 
@@ -227,16 +203,9 @@ def admin_dashboard():
 
 
     return (
-
         text,
-
-        InlineKeyboardMarkup(
-            keyboard
-        )
-
+        InlineKeyboardMarkup(keyboard)
     )
-
-
 
 
 
@@ -244,12 +213,9 @@ def admin_dashboard():
 # منوی کاربران
 # =========================
 
-
 def users_menu():
 
-
     keyboard = [
-
 
         [
 
@@ -260,26 +226,23 @@ def users_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
-                "🔍 جستجو کاربر",
+                "🔍 جستجوی کاربر",
                 callback_data="search_user"
             )
 
         ],
 
-
         [
 
             InlineKeyboardButton(
-                "🚫 مسدود کردن",
+                "🚫 مسدود کردن کاربر",
                 callback_data="block_user"
             )
 
         ],
-
 
         [
 
@@ -299,18 +262,13 @@ def users_menu():
 
 
 
-
-
 # =========================
 # منوی سفارش‌ها
 # =========================
 
-
 def orders_menu():
 
-
     keyboard = [
-
 
         [
 
@@ -321,7 +279,6 @@ def orders_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
@@ -330,7 +287,6 @@ def orders_menu():
             )
 
         ],
-
 
         [
 
@@ -348,15 +304,12 @@ def orders_menu():
         keyboard
     )
     # =========================
-# مدیریت سرویس‌ها
+# منوی سرویس‌ها
 # =========================
-
 
 def services_menu():
 
-
     keyboard = [
-
 
         [
 
@@ -367,7 +320,6 @@ def services_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
@@ -376,7 +328,6 @@ def services_menu():
             )
 
         ],
-
 
         [
 
@@ -387,7 +338,6 @@ def services_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
@@ -396,7 +346,6 @@ def services_menu():
             )
 
         ],
-
 
         [
 
@@ -416,18 +365,13 @@ def services_menu():
 
 
 
-
-
 # =========================
-# مدیریت پرداخت‌ها
+# منوی پرداخت‌ها
 # =========================
-
 
 def payments_menu():
 
-
     keyboard = [
-
 
         [
 
@@ -438,7 +382,6 @@ def payments_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
@@ -447,7 +390,6 @@ def payments_menu():
             )
 
         ],
-
 
         [
 
@@ -458,7 +400,6 @@ def payments_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
@@ -477,18 +418,13 @@ def payments_menu():
 
 
 
-
-
 # =========================
 # مدیریت پنل‌ها
 # =========================
 
-
 def panels_menu():
 
-
     keyboard = [
-
 
         [
 
@@ -499,7 +435,6 @@ def panels_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
@@ -509,7 +444,6 @@ def panels_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
@@ -518,7 +452,6 @@ def panels_menu():
             )
 
         ],
-
 
         [
 
@@ -538,18 +471,13 @@ def panels_menu():
 
 
 
-
-
 # =========================
 # تنظیمات
 # =========================
 
-
 def settings_menu():
 
-
     keyboard = [
-
 
         [
 
@@ -560,7 +488,6 @@ def settings_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
@@ -570,16 +497,14 @@ def settings_menu():
 
         ],
 
-
         [
 
             InlineKeyboardButton(
-                "🔗 تنظیم مرزبان",
+                "🔗 تنظیم Marzban",
                 callback_data="marzban_settings"
             )
 
         ],
-
 
         [
 
@@ -595,37 +520,28 @@ def settings_menu():
 
     return InlineKeyboardMarkup(
         keyboard
-            )
+    )
     # =========================
 # ساخت سرویس مرزبان
 # =========================
 
 
-def create_subscription(
-    volume
-):
+def create_subscription(volume):
 
     try:
-
 
         marzban = Marzban()
 
 
-
         # ورود به پنل
 
-        login = marzban.login()
-
-
-        if not login:
-
+        if not marzban.login():
 
             print(
                 "❌ Marzban login failed"
             )
 
             return None
-
 
 
 
@@ -637,7 +553,6 @@ def create_subscription(
 
         # ساخت کاربر
 
-
         user = marzban.create_user(
 
             username=None,
@@ -647,9 +562,7 @@ def create_subscription(
         )
 
 
-
         if not user:
-
 
             print(
                 "❌ Create user failed"
@@ -659,34 +572,22 @@ def create_subscription(
 
 
 
-
         username = user.get(
             "username"
         )
 
 
-
         if not username:
 
-
             print(
-                "❌ Username not found"
+                "❌ Username missing"
             )
 
             return None
 
 
 
-
-        print(
-            "✅ Created:",
-            username
-        )
-
-
-
-        # دریافت لینک اشتراک
-
+        # گرفتن لینک اشتراک
 
         subscription = marzban.subscription(
 
@@ -695,24 +596,19 @@ def create_subscription(
         )
 
 
-
         if not subscription:
 
-
             print(
-                "❌ Subscription empty"
+                "❌ Subscription link failed"
             )
 
             return None
 
 
 
-
         # کامل کردن لینک
 
-
         if subscription.startswith("/"):
-
 
             subscription = (
 
@@ -726,21 +622,13 @@ def create_subscription(
 
 
 
-
         return {
 
+            "username": username,
 
-            "username":
-
-                username,
-
-
-            "subscription":
-
-                subscription
+            "subscription": subscription
 
         }
-
 
 
 
@@ -748,16 +636,12 @@ def create_subscription(
 
 
         print(
-
             "❌ Marzban Error:",
-
             e
-
         )
 
 
         return None
-
 
 
 
@@ -769,10 +653,9 @@ def create_subscription(
 
 def panel_info():
 
-
     return """
 
-🖥 اطلاعات پنل‌ها
+🖥 وضعیت پنل‌ها
 
 ━━━━━━━━━━━━━━
 
@@ -789,17 +672,14 @@ def panel_info():
 
 
 
-
 # =========================
-# پیام همگانی
+# منوی پیام همگانی
 # =========================
 
 
 def broadcast_menu():
 
-
     keyboard = [
-
 
         [
 
@@ -826,3 +706,9 @@ def broadcast_menu():
     return InlineKeyboardMarkup(
         keyboard
     )
+
+
+
+# =========================
+# پایان admin.py
+# =========================
