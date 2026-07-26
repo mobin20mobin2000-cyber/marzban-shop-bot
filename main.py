@@ -1,7 +1,6 @@
 # ==========================================================
+# Zeus Shop VPN PRO
 # main.py
-# Zeus Shop VPN
-# Telegram Bot
 # ==========================================================
 
 from telegram.ext import Application
@@ -18,8 +17,7 @@ from handlers import register_handlers
 def build_application():
 
     application = (
-        Application
-        .builder()
+        Application.builder()
         .token(BOT_TOKEN)
         .build()
     )
@@ -30,51 +28,50 @@ def build_application():
 
 
 # ==========================================================
-# اجرای ربات
+# اجرای برنامه
 # ==========================================================
 
 def main():
 
     print("=" * 50)
-    print("🚀 Zeus Shop VPN")
+    print("🚀 Zeus Shop VPN PRO")
     print("=" * 50)
 
     if not BOT_TOKEN:
-        print("❌ BOT_TOKEN یافت نشد.")
+        print("❌ BOT_TOKEN تنظیم نشده است.")
         return
 
-    print("📂 Initializing Database...")
-    init_db()
-
-    print("🤖 Building Telegram Application...")
-    application = build_application()
-
-    print("✅ Config loaded successfully")
-    print("🚀 Zeus Shop VPN Bot Started")
-    print("⏳ Waiting for users...")
-
-    application.run_polling(
-        poll_interval=1.0,
-        timeout=30,
-        bootstrap_retries=5,
-        drop_pending_updates=True,
-        allowed_updates=None,
-        close_loop=False,
-    )
-
-
-# ==========================================================
-# شروع برنامه
-# ==========================================================
-
-if __name__ == "__main__":
-
     try:
-        main()
+        print("📂 Initializing Database...")
+        init_db()
+
+        print("🤖 Building Telegram Application...")
+        application = build_application()
+
+        print("✅ Config loaded successfully")
+        print("🚀 Zeus Shop VPN Bot Started")
+        print("⏳ Waiting for updates...")
+
+        application.run_polling(
+            poll_interval=1.0,
+            timeout=30,
+            bootstrap_retries=5,
+            drop_pending_updates=True,
+            allowed_updates=None,
+            close_loop=False,
+        )
 
     except KeyboardInterrupt:
-        print("🛑 Bot Stopped")
+        print("🛑 Bot stopped by user.")
 
     except Exception as error:
         print(f"❌ Fatal Error: {error}")
         raise
+
+
+# ==========================================================
+# Start
+# ==========================================================
+
+if __name__ == "__main__":
+    main()
