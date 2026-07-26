@@ -602,7 +602,7 @@ def register_handlers(app):
     app.add_handler(
         CallbackQueryHandler(
             button,
-            pattern="^(buy|plan_|check_join)"
+            pattern="^(buy|plan_.*|check_join)$"
         )
     )
 
