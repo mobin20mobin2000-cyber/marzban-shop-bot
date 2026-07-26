@@ -26,14 +26,23 @@ ADMIN_ID = int(
 # Channel (عضویت اجباری)
 # =========================
 
-# بدون @
-CHANNEL_USERNAME = "Vpn1_v2rayNG"
+# آیدی کانال بدون @
+CHANNEL_USERNAME = os.getenv(
+    "CHANNEL_USERNAME",
+    "Vpn1_v2rayNG"
+)
 
-# با @
-CHANNEL_ID = "@Vpn1_v2rayNG"
+# آیدی کانال با @
+CHANNEL_ID = os.getenv(
+    "CHANNEL_ID",
+    "@Vpn1_v2rayNG"
+)
 
 # لینک کانال
-CHANNEL_LINK = "https://t.me/Vpn1_v2rayNG"
+CHANNEL_LINK = os.getenv(
+    "CHANNEL_LINK",
+    "https://t.me/Vpn1_v2rayNG"
+)
 
 # =========================
 # Marzban
