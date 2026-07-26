@@ -3,11 +3,13 @@
 # Zeus Shop VPN
 # =========================
 
+
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
+
 
 from telegram.ext import (
     ContextTypes,
@@ -17,25 +19,30 @@ from telegram.ext import (
     filters
 )
 
+
 from config import (
     ADMIN_ID,
     CHANNEL_ID,
     CHANNEL_LINK
 )
 
+
 from texts import (
     WELCOME_TEXT,
     SUPPORT_TEXT
 )
+
 
 from plans import (
     PLANS,
     get_plan
 )
 
+
 from payment import (
     get_payment_text
 )
+
 
 from database import (
     add_user,
@@ -47,108 +54,173 @@ from database import (
     reject_payment as db_reject_payment
 )
 
+
 from admin import (
     admin_panel,
     admin_buttons,
-    create_subscription
+    create_subscription,
+    admin_dashboard,
+    users_menu,
+    orders_menu,
+    services_menu,
+    payments_menu,
+    panels_menu,
+    settings_menu
 )
+
 
 
 # =========================
 # عضویت اجباری کانال
 # =========================
 
-async def is_joined(context, user_id):
+
+async def is_joined(
+    context,
+    user_id
+):
 
     try:
+
         member = await context.bot.get_chat_member(
             chat_id=CHANNEL_ID,
             user_id=user_id
         )
 
+
         return member.status in (
+
             "member",
             "administrator",
             "creator"
+
         )
 
-    except Exception:
+
+    except Exception as e:
+
+        print(
+            "JOIN CHECK ERROR:",
+            e
+        )
+
         return False
+
+
+
+# =========================
+# دکمه عضویت کانال
+# =========================
 
 
 def join_channel_keyboard():
 
+
     return InlineKeyboardMarkup([
 
+
         [
+
             InlineKeyboardButton(
                 "📢 عضویت در کانال",
                 url=CHANNEL_LINK
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "✅ بررسی عضویت",
                 callback_data="check_join"
             )
+
         ]
 
+
     ])
+
 
 
 # =========================
 # منوی کاربر
 # =========================
 
+
 def user_menu():
+
 
     return InlineKeyboardMarkup([
 
+
         [
+
             InlineKeyboardButton(
                 "🛒 خرید اشتراک",
                 callback_data="buy"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "📦 سرویس من",
                 callback_data="my_service"
             )
+
         ],
 
+
         [
+
             InlineKeyboardButton(
                 "💬 پشتیبانی",
                 callback_data="support"
             )
+
         ]
 
+
     ])
+
 
 
 # =========================
 # منوی پلن‌ها
 # =========================
 
+
 def plans_keyboard():
+
 
     keyboard = []
 
+
     for key, plan in PLANS.items():
+
 
         keyboard.append([
 
+
             InlineKeyboardButton(
+
                 f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
+
                 callback_data=f"plan_{key}"
+
             )
+
 
         ])
 
-    return InlineKeyboardMarkup(keyboard)
+
+
+    return InlineKeyboardMarkup(
+        keyboard
+    )
 
 
 
@@ -156,41 +228,82 @@ def plans_keyboard():
 # شروع ربات
 # =========================
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def start(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
 
     user = update.effective_user
 
+
+
     add_user(
+
         user.id,
+
         user.username
+
     )
+
+
+
+    # پنل ادمین
 
     if user.id == ADMIN_ID:
 
+
         await update.message.reply_text(
+
             "👑 پنل مدیریت Zeus Shop VPN",
+
             reply_markup=admin_panel()
+
         )
+
 
         return
 
 
-    if not await is_joined(context, user.id):
+
+    # عضویت کانال
+
+
+    if not await is_joined(
+
+        context,
+
+        user.id
+
+    ):
+
 
         await update.message.reply_text(
-            "🔒 ابتدا در کانال عضو شوید.",
+
+            "🔒 برای استفاده از ربات ابتدا عضو کانال شوید.",
+
             reply_markup=join_channel_keyboard()
+
         )
 
+
         return
+
+
+
+    # منوی کاربر
 
 
     await update.message.reply_text(
+
         WELCOME_TEXT,
+
         reply_markup=user_menu()
+
     )
     # =========================
-# مدیریت دکمه‌ها
+# مدیریت دکمه‌های کاربر
 # =========================
 
 async def button(
@@ -212,10 +325,7 @@ async def button(
 
     if data == "check_join":
 
-        if await is_joined(
-            context,
-            user_id
-        ):
+        if await is_joined(context, user_id):
 
             await query.message.reply_text(
                 "✅ عضویت شما تایید شد.",
@@ -237,10 +347,7 @@ async def button(
     # جلوگیری بدون عضویت
     # =========================
 
-    if not await is_joined(
-        context,
-        user_id
-    ):
+    if not await is_joined(context, user_id):
 
         await query.message.reply_text(
             "⚠️ ابتدا در کانال عضو شوید.",
@@ -252,13 +359,13 @@ async def button(
 
 
     # =========================
-    # خرید اشتراک
+    # خرید
     # =========================
 
     if data == "buy":
 
         await query.message.reply_text(
-            "📦 لطفاً پلن مورد نظر را انتخاب کنید:",
+            "📦 پلن مورد نظر را انتخاب کنید:",
             reply_markup=plans_keyboard()
         )
 
@@ -292,11 +399,17 @@ async def button(
 
 
         order_id = create_order(
+
             user_id,
+
             plan["name"],
+
             plan["volume"],
+
             plan["days"],
+
             plan["price"]
+
         )
 
 
@@ -322,12 +435,12 @@ async def button(
 💰 مبلغ:
 {plan['price']:,} تومان
 
-🧾 شماره سفارش:
+🧾 سفارش:
 {order_id}
 
 ━━━━━━━━━━━━━━
 
-📸 بعد از پرداخت، عکس رسید را ارسال کنید.
+📸 عکس رسید را ارسال کنید.
 
 """
 
@@ -347,10 +460,13 @@ async def show_service(
 
     await query.answer()
 
+
     user_id = query.from_user.id
 
 
-    service = get_subscription(user_id)
+    service = get_subscription(
+        user_id
+    )
 
 
     if service is None:
@@ -364,22 +480,24 @@ async def show_service(
 
 
     await query.message.reply_text(
+
 f"""
 🔐 سرویس من
 
 ━━━━━━━━━━━━━━
 
-👤 نام کاربری مرزبان:
+👤 نام کاربری:
 {service["marzban_username"]}
 
 🔗 لینک اشتراک:
 {service["subscription_url"]}
 
 📅 تاریخ انقضا:
-{service["expire_date"] or "نامشخص"}
+{service.get("expire_date", "نامشخص")}
 
 ━━━━━━━━━━━━━━
 """
+
     )
 
 
@@ -416,13 +534,15 @@ async def receipt_photo(
     user_id = update.effective_user.id
 
 
-    order = last_order(user_id)
+    order = last_order(
+        user_id
+    )
 
 
     if order is None:
 
         await update.message.reply_text(
-            "❌ ابتدا یک سفارش ثبت کنید."
+            "❌ ابتدا سفارش ثبت کنید."
         )
 
         return
@@ -430,6 +550,7 @@ async def receipt_photo(
 
 
     photo = update.message.photo[-1]
+
 
 
     await context.bot.send_photo(
@@ -470,12 +591,15 @@ async def receipt_photo(
     )
 
 
+
     await update.message.reply_text(
+
 """
 ✅ رسید شما دریافت شد.
 
 ⏳ منتظر تایید مدیریت باشید.
 """
+
     )
     # =========================
 # تایید پرداخت
@@ -492,22 +616,23 @@ async def approve_payment(
 
 
     if query.from_user.id != ADMIN_ID:
-
         return
 
 
 
     user_id = int(
+
         query.data.replace(
             "approve_",
             ""
         )
+
     )
 
 
-
-    order = last_order(user_id)
-
+    order = last_order(
+        user_id
+    )
 
 
     if order is None:
@@ -529,7 +654,7 @@ async def approve_payment(
     if result is None:
 
         await query.message.reply_text(
-            "❌ خطا در ساخت سرویس مرزبان."
+            "❌ ساخت سرویس مرزبان ناموفق بود."
         )
 
         return
@@ -549,7 +674,6 @@ async def approve_payment(
         None
 
     )
-
 
 
     db_approve_payment(
@@ -585,7 +709,7 @@ async def approve_payment(
 
 
     await query.message.reply_text(
-        "✅ سرویس ساخته شد و برای کاربر ارسال گردید."
+        "✅ سرویس ساخته شد و ارسال گردید."
     )
 
 
@@ -606,7 +730,6 @@ async def reject_payment(
 
 
     if query.from_user.id != ADMIN_ID:
-
         return
 
 
@@ -614,18 +737,17 @@ async def reject_payment(
     user_id = int(
 
         query.data.replace(
-
             "reject_",
-
             ""
-
         )
 
     )
 
 
 
-    order = last_order(user_id)
+    order = last_order(
+        user_id
+    )
 
 
 
@@ -633,11 +755,8 @@ async def reject_payment(
 
 
         db_reject_payment(
-
             order["id"]
-
         )
-
 
 
         await context.bot.send_message(
@@ -647,26 +766,161 @@ async def reject_payment(
             text="""
 ❌ پرداخت شما رد شد.
 
-در صورت اشتباه بودن، دوباره رسید ارسال کنید.
+در صورت اشتباه، دوباره رسید ارسال کنید.
 """
 
         )
 
 
-
     await query.message.reply_text(
-
         "✅ پرداخت رد شد."
-
     )
-    # =========================
+
+
+
+# =========================
+# منوی مدیریت ادمین
+# =========================
+
+async def admin_menu(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+
+
+    if query.from_user.id != ADMIN_ID:
+        return
+
+
+
+    data = query.data
+
+
+
+    if data == "admin_back":
+
+
+        await query.message.edit_text(
+
+            "👑 پنل مدیریت Zeus Shop VPN",
+
+            reply_markup=admin_panel()
+
+        )
+
+
+        return
+
+
+
+    if data == "admin_users":
+
+
+        await query.message.edit_text(
+
+            "👥 مدیریت کاربران",
+
+            reply_markup=users_menu()
+
+        )
+
+
+        return
+
+
+
+    if data == "admin_orders":
+
+
+        await query.message.edit_text(
+
+            "📋 مدیریت سفارش‌ها",
+
+            reply_markup=orders_menu()
+
+        )
+
+
+        return
+
+
+
+    if data == "admin_services":
+
+
+        await query.message.edit_text(
+
+            "🌐 مدیریت سرویس‌ها",
+
+            reply_markup=services_menu()
+
+        )
+
+
+        return
+
+
+
+    if data == "admin_payments":
+
+
+        await query.message.edit_text(
+
+            "💳 مدیریت پرداخت‌ها",
+
+            reply_markup=payments_menu()
+
+        )
+
+
+        return
+
+
+
+    if data == "admin_panels":
+
+
+        await query.message.edit_text(
+
+            "🖥 مدیریت پنل‌ها",
+
+            reply_markup=panels_menu()
+
+        )
+
+
+        return
+
+
+
+    if data == "settings":
+
+
+        await query.message.edit_text(
+
+            "⚙️ تنظیمات",
+
+            reply_markup=settings_menu()
+
+        )
+
+
+        return
+        # =========================
 # ثبت Handler ها
 # =========================
 
 def register_handlers(app):
 
 
-    # دستور start
+    # =====================
+    # Start
+    # =====================
 
     app.add_handler(
         CommandHandler(
@@ -676,7 +930,9 @@ def register_handlers(app):
     )
 
 
-    # خرید - پلن‌ها - بررسی عضویت
+    # =====================
+    # دکمه‌های کاربر
+    # =====================
 
     app.add_handler(
         CallbackQueryHandler(
@@ -686,8 +942,6 @@ def register_handlers(app):
     )
 
 
-    # سرویس من
-
     app.add_handler(
         CallbackQueryHandler(
             show_service,
@@ -695,8 +949,6 @@ def register_handlers(app):
         )
     )
 
-
-    # پشتیبانی
 
     app.add_handler(
         CallbackQueryHandler(
@@ -706,7 +958,9 @@ def register_handlers(app):
     )
 
 
-    # تایید پرداخت
+    # =====================
+    # پرداخت
+    # =====================
 
     app.add_handler(
         CallbackQueryHandler(
@@ -716,8 +970,6 @@ def register_handlers(app):
     )
 
 
-    # رد پرداخت
-
     app.add_handler(
         CallbackQueryHandler(
             reject_payment,
@@ -726,7 +978,21 @@ def register_handlers(app):
     )
 
 
-    # دریافت عکس رسید
+    # =====================
+    # پنل ادمین
+    # =====================
+
+    app.add_handler(
+        CallbackQueryHandler(
+            admin_menu,
+            pattern="^(admin_|settings)"
+        )
+    )
+
+
+    # =====================
+    # رسید پرداخت
+    # =====================
 
     app.add_handler(
         MessageHandler(
@@ -736,4 +1002,6 @@ def register_handlers(app):
     )
 
 
-    print("✅ Handlers registered successfully")
+    print(
+        "✅ Handlers registered successfully"
+        )
