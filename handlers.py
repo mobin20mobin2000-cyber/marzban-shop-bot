@@ -58,13 +58,9 @@ from admin import (
 # عضویت اجباری کانال
 # =========================
 
-async def is_joined(
-    context,
-    user_id
-):
+async def is_joined(context, user_id):
 
     try:
-
         member = await context.bot.get_chat_member(
             chat_id=CHANNEL_ID,
             user_id=user_id
@@ -77,13 +73,12 @@ async def is_joined(
         )
 
     except Exception:
-
         return False
 
 
 def join_channel_keyboard():
 
-    keyboard = [
+    return InlineKeyboardMarkup([
 
         [
             InlineKeyboardButton(
@@ -99,9 +94,7 @@ def join_channel_keyboard():
             )
         ]
 
-    ]
-
-    return InlineKeyboardMarkup(keyboard)
+    ])
 
 
 # =========================
@@ -110,7 +103,7 @@ def join_channel_keyboard():
 
 def user_menu():
 
-    keyboard = [
+    return InlineKeyboardMarkup([
 
         [
             InlineKeyboardButton(
@@ -133,9 +126,7 @@ def user_menu():
             )
         ]
 
-    ]
-
-    return InlineKeyboardMarkup(keyboard)
+    ])
 
 
 # =========================
@@ -148,29 +139,24 @@ def plans_keyboard():
 
     for key, plan in PLANS.items():
 
-        keyboard.append(
+        keyboard.append([
 
-            [
+            InlineKeyboardButton(
+                f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
+                callback_data=f"plan_{key}"
+            )
 
-                InlineKeyboardButton(
-                    f"📦 {plan['name']} | 💰 {plan['price']:,} تومان",
-                    callback_data=f"plan_{key}"
-                )
-
-            ]
-
-        )
+        ])
 
     return InlineKeyboardMarkup(keyboard)
+
 
 
 # =========================
 # شروع ربات
 # =========================
-async def start(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = update.effective_user
 
@@ -179,7 +165,6 @@ async def start(
         user.username
     )
 
-    # ادمین
     if user.id == ADMIN_ID:
 
         await update.message.reply_text(
@@ -189,28 +174,22 @@ async def start(
 
         return
 
-    # بررسی عضویت کانال
-    if not await is_joined(
-        context,
-        user.id
-    ):
+
+    if not await is_joined(context, user.id):
 
         await update.message.reply_text(
-            "🔒 برای استفاده از ربات ابتدا در کانال عضو شوید.\n\n"
-            "بعد از عضویت روی دکمه «✅ بررسی عضویت» کلیک کنید.",
+            "🔒 ابتدا در کانال عضو شوید.",
             reply_markup=join_channel_keyboard()
         )
 
         return
 
-    # ورود به ربات
+
     await update.message.reply_text(
         WELCOME_TEXT,
         reply_markup=user_menu()
     )
-
-
-# =========================
+    # =========================
 # مدیریت دکمه‌ها
 # =========================
 
@@ -226,7 +205,11 @@ async def button(
     user_id = query.from_user.id
     data = query.data
 
+
+    # =========================
     # بررسی عضویت
+    # =========================
+
     if data == "check_join":
 
         if await is_joined(
@@ -248,7 +231,12 @@ async def button(
 
         return
 
-    # جلوگیری از استفاده بدون عضویت
+
+
+    # =========================
+    # جلوگیری بدون عضویت
+    # =========================
+
     if not await is_joined(
         context,
         user_id
@@ -261,7 +249,12 @@ async def button(
 
         return
 
+
+
+    # =========================
     # خرید اشتراک
+    # =========================
+
     if data == "buy":
 
         await query.message.reply_text(
@@ -271,7 +264,12 @@ async def button(
 
         return
 
+
+
+    # =========================
     # انتخاب پلن
+    # =========================
+
     if data.startswith("plan_"):
 
         plan_id = data.replace(
@@ -279,7 +277,9 @@ async def button(
             ""
         )
 
+
         plan = get_plan(plan_id)
+
 
         if plan is None:
 
@@ -289,6 +289,8 @@ async def button(
 
             return
 
+
+
         order_id = create_order(
             user_id,
             plan["name"],
@@ -296,6 +298,7 @@ async def button(
             plan["days"],
             plan["price"]
         )
+
 
         await query.message.reply_text(
 
@@ -341,11 +344,14 @@ async def show_service(
 ):
 
     query = update.callback_query
+
     await query.answer()
 
     user_id = query.from_user.id
 
+
     service = get_subscription(user_id)
+
 
     if service is None:
 
@@ -354,6 +360,8 @@ async def show_service(
         )
 
         return
+
+
 
     await query.message.reply_text(
 f"""
@@ -375,6 +383,7 @@ f"""
     )
 
 
+
 # =========================
 # پشتیبانی
 # =========================
@@ -385,11 +394,14 @@ async def show_support(
 ):
 
     query = update.callback_query
+
     await query.answer()
+
 
     await query.message.reply_text(
         SUPPORT_TEXT
     )
+
 
 
 # =========================
@@ -403,7 +415,9 @@ async def receipt_photo(
 
     user_id = update.effective_user.id
 
+
     order = last_order(user_id)
+
 
     if order is None:
 
@@ -413,13 +427,17 @@ async def receipt_photo(
 
         return
 
+
+
     photo = update.message.photo[-1]
+
 
     await context.bot.send_photo(
 
         chat_id=ADMIN_ID,
 
         photo=photo.file_id,
+
 
         caption=f"""
 📥 رسید پرداخت جدید
@@ -451,6 +469,7 @@ async def receipt_photo(
 
     )
 
+
     await update.message.reply_text(
 """
 ✅ رسید شما دریافت شد.
@@ -458,9 +477,7 @@ async def receipt_photo(
 ⏳ منتظر تایید مدیریت باشید.
 """
     )
-
-
-# =========================
+    # =========================
 # تایید پرداخت
 # =========================
 
@@ -470,10 +487,15 @@ async def approve_payment(
 ):
 
     query = update.callback_query
+
     await query.answer()
 
+
     if query.from_user.id != ADMIN_ID:
+
         return
+
+
 
     user_id = int(
         query.data.replace(
@@ -482,7 +504,11 @@ async def approve_payment(
         )
     )
 
+
+
     order = last_order(user_id)
+
+
 
     if order is None:
 
@@ -492,9 +518,13 @@ async def approve_payment(
 
         return
 
+
+
     result = create_subscription(
         order["volume"]
     )
+
+
 
     if result is None:
 
@@ -504,20 +534,34 @@ async def approve_payment(
 
         return
 
+
+
     save_subscription(
+
         user_id,
+
         order["id"],
+
         result["username"],
+
         result["subscription"],
+
         None
+
     )
+
+
 
     db_approve_payment(
         order["id"]
     )
 
+
+
     await context.bot.send_message(
+
         chat_id=user_id,
+
         text=f"""
 🎉 پرداخت شما تایید شد.
 
@@ -535,12 +579,18 @@ async def approve_payment(
 
 ❤️ ممنون از خرید شما
 """
+
     )
+
+
 
     await query.message.reply_text(
         "✅ سرویس ساخته شد و برای کاربر ارسال گردید."
-        )
-    # =========================
+    )
+
+
+
+# =========================
 # رد پرداخت
 # =========================
 
@@ -550,47 +600,74 @@ async def reject_payment(
 ):
 
     query = update.callback_query
+
     await query.answer()
 
+
+
     if query.from_user.id != ADMIN_ID:
+
         return
 
+
+
     user_id = int(
+
         query.data.replace(
+
             "reject_",
+
             ""
+
         )
+
     )
+
+
 
     order = last_order(user_id)
 
+
+
     if order:
 
+
         db_reject_payment(
+
             order["id"]
+
         )
 
+
+
         await context.bot.send_message(
+
             chat_id=user_id,
+
             text="""
 ❌ پرداخت شما رد شد.
 
 در صورت اشتباه بودن، دوباره رسید ارسال کنید.
 """
+
         )
 
+
+
     await query.message.reply_text(
+
         "✅ پرداخت رد شد."
+
     )
-
-
-# =========================
+    # =========================
 # ثبت Handler ها
 # =========================
 
 def register_handlers(app):
 
-    # start
+
+    # دستور start
+
     app.add_handler(
         CommandHandler(
             "start",
@@ -598,7 +675,9 @@ def register_handlers(app):
         )
     )
 
-    # خرید، پلن‌ها و بررسی عضویت
+
+    # خرید - پلن‌ها - بررسی عضویت
+
     app.add_handler(
         CallbackQueryHandler(
             button,
@@ -606,7 +685,9 @@ def register_handlers(app):
         )
     )
 
+
     # سرویس من
+
     app.add_handler(
         CallbackQueryHandler(
             show_service,
@@ -614,7 +695,9 @@ def register_handlers(app):
         )
     )
 
+
     # پشتیبانی
+
     app.add_handler(
         CallbackQueryHandler(
             show_support,
@@ -622,7 +705,9 @@ def register_handlers(app):
         )
     )
 
+
     # تایید پرداخت
+
     app.add_handler(
         CallbackQueryHandler(
             approve_payment,
@@ -630,7 +715,9 @@ def register_handlers(app):
         )
     )
 
+
     # رد پرداخت
+
     app.add_handler(
         CallbackQueryHandler(
             reject_payment,
@@ -638,12 +725,15 @@ def register_handlers(app):
         )
     )
 
-    # دریافت رسید پرداخت
+
+    # دریافت عکس رسید
+
     app.add_handler(
         MessageHandler(
             filters.PHOTO,
             receipt_photo
         )
     )
+
 
     print("✅ Handlers registered successfully")
