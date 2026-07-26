@@ -1,11 +1,10 @@
 # =========================
 # database.py
-# Zeus Shop VPN
+# Zeus Shop VPN PRO
 # =========================
 
-
 import sqlite3
-
+from datetime import datetime
 
 
 DATABASE = "zeus.db"
@@ -45,13 +44,15 @@ def init_db():
     # کاربران
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE IF NOT EXISTS users(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
         telegram_id INTEGER UNIQUE,
 
         username TEXT,
+
+        status TEXT DEFAULT 'active',
 
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
@@ -63,7 +64,7 @@ def init_db():
     # سفارش‌ها
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS orders (
+    CREATE TABLE IF NOT EXISTS orders(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -86,10 +87,10 @@ def init_db():
 
 
 
-    # اشتراک‌ها
+    # سرویس‌ها
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS subscriptions (
+    CREATE TABLE IF NOT EXISTS subscriptions(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -103,7 +104,41 @@ def init_db():
 
         expire_date TEXT,
 
+        status TEXT DEFAULT 'active',
+
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # لاگ ادمین
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS logs(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        admin_id INTEGER,
+
+        action TEXT,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # تنظیمات
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS settings(
+
+        key TEXT PRIMARY KEY,
+
+        value TEXT
 
     )
     """)
@@ -156,6 +191,8 @@ def add_user(
 
 
 
+
+
 def get_user(
     telegram_id
 ):
@@ -177,7 +214,7 @@ def get_user(
         """,
 
         (
-            telegram_id,
+            telegram_id
         )
 
     )
@@ -190,6 +227,8 @@ def get_user(
 
 
     return user
+
+
 
 
 
@@ -221,6 +260,8 @@ def all_users():
 
 
     return users
+
+
 
 
 
@@ -256,6 +297,8 @@ def users_count():
 
 
 # =========================
+# جستجوی
+# =========================
 # سفارش‌ها
 # =========================
 
@@ -285,11 +328,17 @@ def create_order(
         INSERT INTO orders
 
         (
+
             telegram_id,
+
             plan,
+
             volume,
+
             days,
+
             price
+
         )
 
         VALUES (?,?,?,?,?)
@@ -326,8 +375,12 @@ def create_order(
 
 
 
+
+
 def get_order(
+
     order_id
+
 ):
 
     db = get_db()
@@ -347,7 +400,7 @@ def get_order(
         """,
 
         (
-            order_id,
+            order_id
         )
 
     )
@@ -363,8 +416,12 @@ def get_order(
 
 
 
+
+
 def last_order(
+
     telegram_id
+
 ):
 
     db = get_db()
@@ -388,7 +445,7 @@ def last_order(
         """,
 
         (
-            telegram_id,
+            telegram_id
         )
 
     )
@@ -404,8 +461,12 @@ def last_order(
 
 
 
+
+
 def user_orders(
+
     telegram_id
+
 ):
 
     db = get_db()
@@ -427,7 +488,7 @@ def user_orders(
         """,
 
         (
-            telegram_id,
+            telegram_id
         )
 
     )
@@ -440,12 +501,13 @@ def user_orders(
 
 
     return orders
-    # =========================
-# پرداخت‌ها
-# =========================
+
+
+
 
 
 def pending_orders():
+
 
     db = get_db()
 
@@ -478,8 +540,12 @@ def pending_orders():
 
 
 
+
+
 def approve_payment(
+
     order_id
+
 ):
 
     db = get_db()
@@ -499,7 +565,7 @@ def approve_payment(
         """,
 
         (
-            order_id,
+            order_id
         )
 
     )
@@ -511,8 +577,12 @@ def approve_payment(
 
 
 
+
+
 def reject_payment(
+
     order_id
+
 ):
 
     db = get_db()
@@ -532,7 +602,7 @@ def reject_payment(
         """,
 
         (
-            order_id,
+            order_id
         )
 
     )
@@ -545,145 +615,9 @@ def reject_payment(
 
 
 
-def approved_orders():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-
-        """
-        SELECT *
-
-        FROM orders
-
-        WHERE payment_status='approved'
-
-        ORDER BY id DESC
-
-        """
-
-    )
-
-
-    orders = cursor.fetchall()
-
-
-    db.close()
-
-
-    return orders
-
-
-
-def rejected_orders():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-
-        """
-        SELECT *
-
-        FROM orders
-
-        WHERE payment_status='rejected'
-
-        ORDER BY id DESC
-
-        """
-
-    )
-
-
-    orders = cursor.fetchall()
-
-
-    db.close()
-
-
-    return orders
-
-
-
-
 
 # =========================
-# آمار فروش
-# =========================
-
-
-def sales_count():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-
-        """
-        SELECT COUNT(*)
-
-        FROM orders
-
-        WHERE payment_status='approved'
-
-        """
-
-    )
-
-
-    count = cursor.fetchone()[0]
-
-
-    db.close()
-
-
-    return count
-
-
-
-
-def total_sales():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-
-        """
-        SELECT SUM(price)
-
-        FROM orders
-
-        WHERE payment_status='approved'
-
-        """
-
-    )
-
-
-    total = cursor.fetchone()[0]
-
-
-    db.close()
-
-
-    return total or 0
-
-
-
-
-# =========================
-# اشتراک‌ها
+# سرویس‌ها
 # =========================
 
 
@@ -713,15 +647,15 @@ def save_subscription(
 
         (
 
-        telegram_id,
+            telegram_id,
 
-        order_id,
+            order_id,
 
-        marzban_username,
+            marzban_username,
 
-        subscription_url,
+            subscription_url,
 
-        expire_date
+            expire_date
 
         )
 
@@ -753,8 +687,11 @@ def save_subscription(
 
 
 
+
 def get_subscription(
+
     telegram_id
+
 ):
 
     db = get_db()
@@ -778,24 +715,26 @@ def get_subscription(
         """,
 
         (
-            telegram_id,
+            telegram_id
         )
 
     )
 
 
-    subscription = cursor.fetchone()
+    service = cursor.fetchone()
 
 
     db.close()
 
 
-    return subscription
+    return service
+
 
 
 
 
 def all_subscriptions():
+
 
     db = get_db()
 
@@ -816,13 +755,159 @@ def all_subscriptions():
     )
 
 
-    subscriptions = cursor.fetchall()
+    services = cursor.fetchall()
 
 
     db.close()
 
 
-    return subscriptions
+    return services
+
+
+
+
+
+def delete_subscription(
+
+    subscription_id
+
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+
+        """
+        DELETE FROM subscriptions
+
+        WHERE id=?
+
+        """,
+
+        (
+            subscription_id
+        )
+
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+
+def update_expire_date(
+
+    subscription_id,
+
+    expire_date
+
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+
+        """
+        UPDATE subscriptions
+
+        SET expire_date=?
+
+        WHERE id=?
+
+        """,
+
+        (
+
+            expire_date,
+
+            subscription_id
+
+        )
+
+    )
+
+
+    db.commit()
+
+    db.close()
+    # =========================
+# آمار فروش
+# =========================
+
+
+def sales_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+
+        """
+        SELECT COUNT(*)
+
+        FROM orders
+
+        WHERE payment_status='approved'
+
+        """
+
+    )
+
+
+    result = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return result
+
+
+
+
+
+def total_sales():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+
+        """
+        SELECT SUM(price)
+
+        FROM orders
+
+        WHERE payment_status='approved'
+
+        """
+
+    )
+
+
+    result = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return result or 0
+
+
 
 
 
@@ -840,25 +925,70 @@ def subscriptions_count():
 
         FROM subscriptions
 
+        WHERE status='active'
+
         """
 
     )
 
 
-    count = cursor.fetchone()[0]
+    result = cursor.fetchone()[0]
 
 
     db.close()
 
 
-    return count
-    # =========================
-# ابزارهای مدیریت ادمین
+    return result
+
+
+
+
+
+def get_stats():
+
+
+    return {
+
+
+        "users":
+
+            users_count(),
+
+
+
+        "sales":
+
+            sales_count(),
+
+
+
+        "subscriptions":
+
+            subscriptions_count(),
+
+
+
+        "income":
+
+            total_sales()
+
+    }
+
+
+
+
+
+# =========================
+# لاگ ادمین
 # =========================
 
 
-def get_user_subscriptions(
-    telegram_id
+def add_log(
+
+    admin_id,
+
+    action
+
 ):
 
     db = get_db()
@@ -869,100 +999,26 @@ def get_user_subscriptions(
     cursor.execute(
 
         """
-        SELECT *
-
-        FROM subscriptions
-
-        WHERE telegram_id=?
-
-        ORDER BY id DESC
-
-        """,
-
-        (
-            telegram_id,
-        )
-
-    )
-
-
-    subscriptions = cursor.fetchall()
-
-
-    db.close()
-
-
-    return subscriptions
-
-
-
-
-def search_users(
-    text
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-
-        """
-        SELECT *
-
-        FROM users
-
-        WHERE telegram_id LIKE ?
-
-        OR username LIKE ?
-
-        ORDER BY id DESC
-
-        """,
+        INSERT INTO logs
 
         (
 
-            f"%{text}%",
+            admin_id,
 
-            f"%{text}%"
+            action
 
         )
 
-    )
-
-
-    users = cursor.fetchall()
-
-
-    db.close()
-
-
-    return users
-
-
-
-
-def delete_order(
-    order_id
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-
-        """
-        DELETE FROM orders
-
-        WHERE id=?
+        VALUES (?,?)
 
         """,
 
         (
-            order_id,
+
+            admin_id,
+
+            action
+
         )
 
     )
@@ -975,38 +1031,182 @@ def delete_order(
 
 
 
+
+def get_logs():
+
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+
+        """
+        SELECT *
+
+        FROM logs
+
+        ORDER BY id DESC
+
+        """
+
+    )
+
+
+    logs = cursor.fetchall()
+
+
+    db.close()
+
+
+    return logs
+
+
+
+
+
 # =========================
-# آمار کامل داشبورد
+# تنظیمات ربات
 # =========================
 
 
-def get_stats():
+def set_setting(
+
+    key,
+
+    value
+
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
 
 
-    return {
+    cursor.execute(
+
+        """
+        INSERT INTO settings
+
+        (
+
+            key,
+
+            value
+
+        )
+
+        VALUES (?,?)
+
+        ON CONFLICT(key)
+
+        DO UPDATE SET value=excluded.value
+
+        """,
+
+        (
+
+            key,
+
+            value
+
+        )
+
+    )
 
 
-        "users":
+    db.commit()
 
-        users_count(),
-
-
-
-        "sales":
-
-        sales_count(),
+    db.close()
 
 
 
-        "subscriptions":
-
-        subscriptions_count(),
 
 
+def get_setting(
 
-        "income":
+    key
 
-        total_sales()
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
 
 
-    }
+    cursor.execute(
+
+        """
+        SELECT value
+
+        FROM settings
+
+        WHERE key=?
+
+        """,
+
+        (
+
+            key
+
+        )
+
+    )
+
+
+    result = cursor.fetchone()
+
+
+    db.close()
+
+
+
+    if result:
+
+        return result["value"]
+
+
+    return None
+
+
+
+
+
+# =========================
+# پاکسازی و حذف
+# =========================
+
+
+def delete_user(
+
+    telegram_id
+
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+
+        """
+        DELETE FROM users
+
+        WHERE telegram_id=?
+
+        """,
+
+        (
+
+            telegram_id
+
+        )
+
+    )
+
+
+    db.commit()
+
+    db.close()
