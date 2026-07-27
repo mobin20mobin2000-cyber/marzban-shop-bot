@@ -31,71 +31,100 @@ from config import (
 
 from database import (
     add_user,
-    get_user_service,
     create_order,
     last_order,
     save_receipt,
-    approve_payment,
-    reject_payment
+    get_user_service,
+    save_service
 )
 
 
 
+from marzban import Marzban
+
+
+
+
+
 # ==========================================================
-# User Main Menu
+# Main Menu
 # ==========================================================
 
 
-def main_menu():
+def main_menu(user_id=None):
 
 
     keyboard = [
 
+
         [
+
             InlineKeyboardButton(
                 "🛒 خرید سرویس",
                 callback_data="buy"
             )
+
         ],
 
 
         [
+
             InlineKeyboardButton(
                 "👤 سرویس من",
                 callback_data="my_service"
             )
+
         ],
 
 
         [
+
             InlineKeyboardButton(
                 "💳 پرداخت",
                 callback_data="payment"
             )
+
         ],
 
 
         [
+
             InlineKeyboardButton(
                 "🎧 پشتیبانی",
                 callback_data="support"
             )
-        ],
 
-
-        [
-            InlineKeyboardButton(
-                "👑 مدیریت",
-                callback_data="admin"
-            )
         ]
 
     ]
 
 
+
+    # فقط ادمین ببیند
+
+    if user_id == ADMIN_ID:
+
+
+        keyboard.append(
+
+            [
+
+                InlineKeyboardButton(
+                    "👑 مدیریت",
+                    callback_data="admin"
+                )
+
+            ]
+
+        )
+
+
+
     return InlineKeyboardMarkup(
         keyboard
     )
+
+
 
 
 
@@ -107,8 +136,11 @@ def main_menu():
 
 
 async def start(
+
     update: Update,
+
     context: ContextTypes.DEFAULT_TYPE
+
 ):
 
 
@@ -126,60 +158,33 @@ async def start(
 
 
 
-    text = f"""
+    text=f"""
 
-👑 Zeus Shop VPN PRO
-
-
-سلام {user.first_name} عزیز 🌹
+👑 Zeus Shop VPN
 
 
-به بزرگترین فروشگاه سرویس VPN خوش آمدید.
+سلام {user.first_name} 🌹
 
 
-━━━━━━━━━━━━━━━━━━
+به ربات رسمی خرید VPN خوش آمدید.
 
 
-🚀 اینترنت سریع و پایدار
-
-🔐 اتصال امن و مطمئن
-
-⚡ فعال‌سازی سریع سرویس
-
-🌍 مناسب بازی، وب‌گردی و استفاده روزمره
+🚀 اینترنت پرسرعت
+🔐 اتصال امن
+⚡ فعالسازی سریع
 
 
-━━━━━━━━━━━━━━━━━━
-
-
-امکانات ربات:
-
-
-🛒 خرید سرویس
-
-👤 مشاهده سرویس من
-
-💳 پرداخت آسان
-
-🎧 پشتیبانی
-
-
-━━━━━━━━━━━━━━━━━━
-
-
-✨ از منوی زیر انتخاب کنید.
-
-
-💎 Zeus Shop VPN PRO
+از منوی زیر انتخاب کنید 👇
 
 """
+
 
 
     await update.message.reply_text(
 
         text,
 
-        reply_markup=main_menu()
+        reply_markup=main_menu(user.id)
 
     )
     # ==========================================================
@@ -198,11 +203,8 @@ def plans_menu():
         [
 
             InlineKeyboardButton(
-
                 "📦 50GB | 30 روز | 70,000 تومان",
-
                 callback_data="plan_50"
-
             )
 
         ],
@@ -211,11 +213,8 @@ def plans_menu():
         [
 
             InlineKeyboardButton(
-
                 "📦 100GB | 30 روز | 140,000 تومان",
-
                 callback_data="plan_100"
-
             )
 
         ],
@@ -224,11 +223,8 @@ def plans_menu():
         [
 
             InlineKeyboardButton(
-
                 "♾ نامحدود | 30 روز | 165,000 تومان",
-
                 callback_data="plan_unlimited"
-
             )
 
         ],
@@ -237,11 +233,8 @@ def plans_menu():
         [
 
             InlineKeyboardButton(
-
                 "🔙 بازگشت",
-
                 callback_data="back_home"
-
             )
 
         ]
@@ -257,6 +250,8 @@ def plans_menu():
 
 
 
+
+
 # ==========================================================
 # Create Order
 # ==========================================================
@@ -265,10 +260,6 @@ def plans_menu():
 async def create_plan_order(
 
     query,
-
-    telegram_id,
-
-    plan,
 
     volume,
 
@@ -279,11 +270,13 @@ async def create_plan_order(
 ):
 
 
+    user_id = query.from_user.id
+
+
+
     order_id = create_order(
 
-        telegram_id,
-
-        plan,
+        user_id,
 
         volume,
 
@@ -295,9 +288,14 @@ async def create_plan_order(
 
 
 
-    text = f"""
 
-✅ سفارش شما ثبت شد
+
+    await query.edit_message_text(
+
+
+        f"""
+
+✅ سفارش ثبت شد
 
 
 ━━━━━━━━━━━━
@@ -308,12 +306,7 @@ async def create_plan_order(
 #{order_id}
 
 
-📦 سرویس:
-
-{plan}
-
-
-📊 حجم:
+📦 حجم:
 
 {volume}
 
@@ -331,15 +324,10 @@ async def create_plan_order(
 ━━━━━━━━━━━━
 
 
-برای پرداخت روی دکمه زیر بزنید.
+برای پرداخت اقدام کنید.
 
-"""
+""",
 
-
-
-    await query.edit_message_text(
-
-        text,
 
         reply_markup=InlineKeyboardMarkup(
 
@@ -352,19 +340,6 @@ async def create_plan_order(
                         "💳 پرداخت",
 
                         callback_data="payment"
-
-                    )
-
-                ],
-
-
-                [
-
-                    InlineKeyboardButton(
-
-                        "🔙 بازگشت",
-
-                        callback_data="back_home"
 
                     )
 
@@ -394,24 +369,12 @@ async def plan_handler(
 ):
 
 
-    user_id = query.from_user.id
-
-
-    data = query.data
-
-
-
-
-    if data == "plan_50":
+    if query.data == "plan_50":
 
 
         await create_plan_order(
 
             query,
-
-            user_id,
-
-            "50GB",
 
             "50GB",
 
@@ -423,17 +386,12 @@ async def plan_handler(
 
 
 
-
-    elif data == "plan_100":
+    elif query.data == "plan_100":
 
 
         await create_plan_order(
 
             query,
-
-            user_id,
-
-            "100GB",
 
             "100GB",
 
@@ -445,17 +403,12 @@ async def plan_handler(
 
 
 
-
-    elif data == "plan_unlimited":
+    elif query.data == "plan_unlimited":
 
 
         await create_plan_order(
 
             query,
-
-            user_id,
-
-            "نامحدود",
 
             "Unlimited",
 
@@ -464,96 +417,6 @@ async def plan_handler(
             165000
 
         )
-        # ==========================================================
-# My Service
-# Part 3/5
-# ==========================================================
-
-
-async def my_service(
-    query
-):
-
-
-    user_id = query.from_user.id
-
-
-
-    service = get_user_service(
-
-        user_id
-
-    )
-
-
-
-    if not service:
-
-
-        await query.edit_message_text(
-
-            """
-❌ سرویس فعالی ندارید.
-
-
-برای خرید سرویس از بخش خرید اقدام کنید.
-""",
-
-            reply_markup=main_menu()
-
-        )
-
-        return
-
-
-
-
-
-    text = f"""
-
-🌐 سرویس فعال شما
-
-
-━━━━━━━━━━━━
-
-
-👤 کاربر:
-
-{service['username']}
-
-
-📦 حجم:
-
-{service['volume']}
-
-
-⏳ مدت:
-
-{service['days']} روز
-
-
-📅 انقضا:
-
-{service['expire_date']}
-
-
-🔗 لینک اتصال:
-
-{service['subscription_url']}
-
-
-━━━━━━━━━━━━
-
-"""
-
-
-    await query.edit_message_text(
-
-        text,
-
-        reply_markup=main_menu()
-
-    )
 
 
 
@@ -563,7 +426,7 @@ async def my_service(
 
 
 # ==========================================================
-# Payment Menu
+# Payment
 # ==========================================================
 
 
@@ -588,13 +451,14 @@ async def payment_menu(
         await query.edit_message_text(
 
             """
-❌ سفارش پیدا نشد.
+❌ سفارشی پیدا نشد.
 
-
-ابتدا سرویس خریداری کنید.
+ابتدا خرید انجام دهید.
 """,
 
-            reply_markup=main_menu()
+            reply_markup=main_menu(
+                query.from_user.id
+            )
 
         )
 
@@ -604,7 +468,11 @@ async def payment_menu(
 
 
 
-    text = f"""
+
+    await query.edit_message_text(
+
+
+        f"""
 
 💳 پرداخت سفارش
 
@@ -631,28 +499,15 @@ async def payment_menu(
 ━━━━━━━━━━━━
 
 
-بعد از پرداخت، عکس رسید را ارسال کنید.
-
+بعد از پرداخت عکس رسید را ارسال کنید.
 
 """
 
 
-
-    await query.edit_message_text(
-
-        text
-
     )
-
-
-
-
-
-
-
-
-# ==========================================================
-# Receive Receipt
+    # ==========================================================
+# Receipt Handler
+# Part 3/5
 # ==========================================================
 
 
@@ -666,7 +521,6 @@ async def receive_receipt(
 
 
     user = update.effective_user
-
 
 
 
@@ -689,7 +543,6 @@ async def receive_receipt(
 
 
 
-
     save_receipt(
 
         user.id,
@@ -705,10 +558,12 @@ async def receive_receipt(
     await update.message.reply_text(
 
         """
+
 ✅ رسید شما دریافت شد.
 
 
 ⏳ منتظر تایید مدیریت باشید.
+
 """
 
     )
@@ -717,9 +572,13 @@ async def receive_receipt(
 
 
 
+
+
     await context.bot.send_photo(
 
+
         chat_id=ADMIN_ID,
+
 
         photo=photo.file_id,
 
@@ -748,6 +607,7 @@ async def receive_receipt(
 بررسی پرداخت:
 
 """,
+
 
 
         reply_markup=InlineKeyboardMarkup(
@@ -784,164 +644,21 @@ async def receive_receipt(
         )
 
     )
-    # ==========================================================
-# Admin Panel
-# Part 4/5
-# ==========================================================
 
 
-def admin_menu():
 
 
-    keyboard = [
-
-
-        [
-
-            InlineKeyboardButton(
-
-                "📊 آمار ربات",
-
-                callback_data="admin_stats"
-
-            )
-
-        ],
-
-
-        [
-
-            InlineKeyboardButton(
-
-                "💳 رسیدهای پرداخت",
-
-                callback_data="admin_receipts"
-
-            )
-
-        ],
-
-
-        [
-
-            InlineKeyboardButton(
-
-                "🛒 سفارش‌ها",
-
-                callback_data="admin_orders"
-
-            )
-
-        ],
-
-
-        [
-
-            InlineKeyboardButton(
-
-                "🔙 بازگشت",
-
-                callback_data="back_home"
-
-            )
-
-        ]
-
-    ]
-
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
 
 
 
 
 
 # ==========================================================
-# Admin Stats
+# Payment Approval
 # ==========================================================
 
 
-async def admin_stats(
-
-    query
-
-):
-
-
-    from database import get_stats
-
-
-
-    stats = get_stats()
-
-
-
-    text = f"""
-
-👑 پنل مدیریت Zeus
-
-
-━━━━━━━━━━━━
-
-
-👤 کاربران:
-
-{stats['users']}
-
-
-🆕 امروز:
-
-{stats['today_users']}
-
-
-🛒 فروش:
-
-{stats['sales']}
-
-
-🌐 سرویس‌ها:
-
-{stats['subscriptions']}
-
-
-💰 درآمد:
-
-{stats['income']:,}
-
-
-⏳ در انتظار:
-
-{stats['pending']}
-
-
-━━━━━━━━━━━━
-
-"""
-
-
-
-    await query.edit_message_text(
-
-        text,
-
-        reply_markup=admin_menu()
-
-    )
-
-
-
-
-
-
-
-# ==========================================================
-# Approve / Reject Receipt
-# ==========================================================
-
-
-async def receipt_action(
+async def payment_action(
 
     query,
 
@@ -952,6 +669,13 @@ async def receipt_action(
 
     data = query.data
 
+
+
+
+
+    # =========================
+    # Approve
+    # =========================
 
 
     if data.startswith("approve_"):
@@ -965,35 +689,168 @@ async def receipt_action(
 
 
 
-        await context.bot.send_message(
-
-            chat_id=user_id,
-
-            text="""
-
-✅ پرداخت شما تایید شد.
+        try:
 
 
-⏳ سرویس شما در حال آماده‌سازی است.
+
+            marzban = Marzban()
+
+
+
+            service = marzban.create_service(
+
+                volume=50,
+
+                days=30
+
+            )
+
+
+
+
+
+            if service:
+
+
+
+
+                save_service(
+
+
+                    user_id,
+
+
+                    service["username"],
+
+
+                    service["subscription_url"],
+
+
+                    service["volume"],
+
+
+                    service["days"]
+
+                )
+
+
+
+
+
+                await context.bot.send_message(
+
+
+                    chat_id=user_id,
+
+
+                    text=f"""
+
+🎉 سرویس شما فعال شد
+
+
+━━━━━━━━━━━━
+
+
+👤 نام کاربری:
+
+{service['username']}
+
+
+📦 حجم:
+
+{service['volume']}
+
+
+⏳ مدت:
+
+{service['days']} روز
+
+
+🔗 لینک اتصال:
+
+
+{service['subscription_url']}
+
+
+━━━━━━━━━━━━
+
+
+ممنون از اعتماد شما ❤️
 
 """
 
-        )
+                )
 
 
 
-        await query.edit_message_caption(
 
-            caption="""
+
+                await query.edit_message_caption(
+
+                    caption="""
 
 ✅ پرداخت تایید شد
 
 
-کاربر مطلع شد.
+✅ سرویس ساخته شد
+
+
+✅ برای کاربر ارسال شد.
 
 """
 
-        )
+                )
+
+
+
+
+
+            else:
+
+
+
+                await query.edit_message_caption(
+
+                    caption="""
+
+❌ پرداخت تایید شد
+
+ولی ساخت سرویس Marzban ناموفق بود.
+
+"""
+
+                )
+
+
+
+
+
+        except Exception as error:
+
+
+            print(
+
+                "SERVICE ERROR:",
+
+                error
+
+            )
+
+
+
+            await query.edit_message_caption(
+
+                caption=f"""
+
+❌ خطا در ساخت سرویس:
+
+
+{error}
+
+"""
+
+            )
+
 
 
         return
@@ -1001,6 +858,12 @@ async def receipt_action(
 
 
 
+
+
+
+    # =========================
+    # Reject
+    # =========================
 
 
     if data.startswith("reject_"):
@@ -1035,14 +898,300 @@ async def receipt_action(
 
             caption="""
 
-❌ پرداخت رد شد
+❌ پرداخت
+        # ==========================================================
+# My Service
+# Part 4/5
+# ==========================================================
 
-"""
+
+
+async def my_service(
+
+    query
+
+):
+
+
+    user_id = query.from_user.id
+
+
+
+    service = get_user_service(
+
+        user_id
+
+    )
+
+
+
+
+
+    if not service:
+
+
+        await query.edit_message_text(
+
+            """
+
+❌ شما سرویس فعالی ندارید.
+
+
+برای خرید سرویس اقدام کنید.
+
+""",
+
+            reply_markup=main_menu(user_id)
 
         )
 
+        return
+
+
+
+
+
+
+
+    await query.edit_message_text(
+
+
+
+        f"""
+
+🌐 سرویس شما
+
+
+━━━━━━━━━━━━
+
+
+👤 نام کاربری:
+
+{service['username']}
+
+
+📦 حجم:
+
+{service['volume']}
+
+
+⏳ مدت:
+
+{service['days']} روز
+
+
+🔗 لینک اتصال:
+
+
+{service['subscription_url']}
+
+
+━━━━━━━━━━━━
+
+
+"""
+
+,
+
+        reply_markup=main_menu(user_id)
+
+    )
+
+
+
+
+
+
+
+
+
+# ==========================================================
+# Admin Menu
+# ==========================================================
+
+
+def admin_menu():
+
+
+    keyboard = [
+
+
+        [
+
+            InlineKeyboardButton(
+
+                "📊 آمار کاربران",
+
+                callback_data="admin_stats"
+
+            )
+
+        ],
+
+
+        [
+
+            InlineKeyboardButton(
+
+                "🛒 سفارش‌ها",
+
+                callback_data="admin_orders"
+
+            )
+
+        ],
+
+
+        [
+
+            InlineKeyboardButton(
+
+                "🔙 برگشت",
+
+                callback_data="back_home"
+
+            )
+
+        ]
+
+    ]
+
+
+    return InlineKeyboardMarkup(
+
+        keyboard
+
+    )
+
+
+
+
+
+
+
+
+
+# ==========================================================
+# Admin Panel
+# ==========================================================
+
+
+async def admin_panel(
+
+    query
+
+):
+
+
+    if query.from_user.id != ADMIN_ID:
+
+
+        await query.edit_message_text(
+
+            "❌ دسترسی ندارید."
+
+        )
 
         return
+
+
+
+
+
+    await query.edit_message_text(
+
+
+        """
+
+👑 پنل مدیریت Zeus
+
+
+━━━━━━━━━━━━
+
+
+از گزینه‌های زیر استفاده کنید.
+
+""",
+
+
+        reply_markup=admin_menu()
+
+    )
+
+
+
+
+
+
+
+
+
+# ==========================================================
+# Admin Stats
+# ==========================================================
+
+
+async def admin_stats(
+
+    query
+
+):
+
+
+    if query.from_user.id != ADMIN_ID:
+
+        return
+
+
+
+
+
+    from database import get_stats
+
+
+
+    stats = get_stats()
+
+
+
+    await query.edit_message_text(
+
+
+        f"""
+
+📊 آمار ربات
+
+
+━━━━━━━━━━━━
+
+
+👤 کاربران:
+
+{stats['users']}
+
+
+🛒 سفارش‌ها:
+
+{stats['orders']}
+
+
+🌐 سرویس‌ها:
+
+{stats['services']}
+
+
+💰 درآمد:
+
+{stats['income']:,} تومان
+
+
+━━━━━━━━━━━━
+
+""",
+
+        reply_markup=admin_menu()
+
+    )
         # ==========================================================
 # Button Handler
 # Part 5/5
@@ -1072,7 +1221,7 @@ async def button_handler(
 
 
     # =========================
-    # Back Home
+    # Home
     # =========================
 
 
@@ -1083,7 +1232,9 @@ async def button_handler(
 
             "🏠 منوی اصلی",
 
-            reply_markup=main_menu()
+            reply_markup=main_menu(
+                query.from_user.id
+            )
 
         )
 
@@ -1135,6 +1286,25 @@ async def button_handler(
 
 
 
+    # =========================
+    # Payment
+    # =========================
+
+
+    if data == "payment":
+
+
+        await payment_menu(
+
+            query
+
+        )
+
+        return
+
+
+
+
 
     # =========================
     # My Service
@@ -1156,16 +1326,43 @@ async def button_handler(
 
 
 
+    # =========================
+    # Support
+    # =========================
+
+
+    if data == "support":
+
+
+        await query.edit_message_text(
+
+            """
+
+🎧 پشتیبانی
+
+
+برای ارتباط با مدیریت پیام ارسال کنید.
+
+"""
+
+        )
+
+        return
+
+
+
+
+
 
     # =========================
-    # Payment
+    # Admin
     # =========================
 
 
-    if data == "payment":
+    if data == "admin":
 
 
-        await payment_menu(
+        await admin_panel(
 
             query
 
@@ -1177,53 +1374,7 @@ async def button_handler(
 
 
 
-
-    # =========================
-    # Admin Open
-    # =========================
-
-
-    if data == "admin":
-
-
-        if query.from_user.id != ADMIN_ID:
-
-
-            await query.edit_message_text(
-
-                "❌ شما دسترسی مدیریت ندارید."
-
-            )
-
-            return
-
-
-
-        await query.edit_message_text(
-
-            "👑 پنل مدیریت",
-
-            reply_markup=admin_menu()
-
-        )
-
-        return
-
-
-
-
-
-    # =========================
-    # Admin Stats
-    # =========================
-
-
     if data == "admin_stats":
-
-
-        if query.from_user.id != ADMIN_ID:
-
-            return
 
 
         await admin_stats(
@@ -1239,7 +1390,7 @@ async def button_handler(
 
 
     # =========================
-    # Receipt Approve / Reject
+    # Approve / Reject
     # =========================
 
 
@@ -1248,41 +1399,16 @@ async def button_handler(
 
         if query.from_user.id != ADMIN_ID:
 
+
             return
 
 
 
-        await receipt_action(
+        await payment_action(
 
             query,
 
             context
-
-        )
-
-        return
-
-
-
-
-
-
-    # =========================
-    # Support
-    # =========================
-
-
-    if data == "support":
-
-
-        await query.edit_message_text(
-
-            """
-🎧 پشتیبانی
-
-
-پیام خود را ارسال کنید.
-"""
 
         )
 
@@ -1320,6 +1446,8 @@ def register_handlers(
 
 
 
+
+
     application.add_handler(
 
         CallbackQueryHandler(
@@ -1329,6 +1457,8 @@ def register_handlers(
         )
 
     )
+
+
 
 
 
@@ -1342,4 +1472,4 @@ def register_handlers(
 
         )
 
-        )
+    )
