@@ -1,7 +1,7 @@
 # ==========================================================
 # Zeus Shop VPN PRO
 # broadcast.py
-# Part 1/5
+# Part 1/2
 # ==========================================================
 
 
@@ -9,6 +9,11 @@ from database import get_all_users
 
 
 
+
+
+# ==========================================================
+# Send Message To All Users
+# ==========================================================
 
 
 async def send_broadcast(
@@ -50,7 +55,18 @@ async def send_broadcast(
 
 
 
-        except Exception:
+
+
+        except Exception as error:
+
+
+            print(
+
+                "BROADCAST ERROR:",
+
+                error
+
+            )
 
 
             failed += 1
@@ -59,10 +75,214 @@ async def send_broadcast(
 
 
 
+
+
     return {
+
 
         "success": success,
 
-        "failed": failed
+
+        "failed": failed,
+
+
+        "total": len(users)
 
     }
+
+
+
+
+
+
+
+# ==========================================================
+# Send Broadcast With Header
+# ==========================================================
+
+
+async def send_broadcast_pro(
+
+    bot,
+
+    message
+
+):
+
+
+    text = f"""
+👑 Zeus Shop VPN
+
+━━━━━━━━━━━━━━
+
+{message}
+
+━━━━━━━━━━━━━━
+
+❤️ ممنون از همراهی شما
+"""
+
+
+
+    return await send_broadcast(
+
+        bot,
+
+        text
+
+    )
+    # ==========================================================
+# Broadcast History + Report
+# Part 2/2
+# ==========================================================
+
+
+import sqlite3
+from datetime import datetime
+
+
+DB_NAME = "zeus.db"
+
+
+
+
+
+# ==========================================================
+# Save Broadcast History
+# ==========================================================
+
+
+def save_broadcast_history(
+
+    message,
+
+    success,
+
+    failed
+
+):
+
+
+    conn = sqlite3.connect(
+
+        DB_NAME
+
+    )
+
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute("""
+
+    CREATE TABLE IF NOT EXISTS broadcasts (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        message TEXT,
+
+        success INTEGER,
+
+        failed INTEGER,
+
+        created_at TEXT
+
+    )
+
+    """)
+
+
+
+
+
+    cursor.execute(
+
+        """
+        INSERT INTO broadcasts
+        (
+            message,
+            success,
+            failed,
+            created_at
+        )
+
+        VALUES (?, ?, ?, ?)
+
+        """,
+
+        (
+
+            message,
+
+            success,
+
+            failed,
+
+            datetime.now().strftime(
+
+                "%Y-%m-%d %H:%M:%S"
+
+            )
+
+        )
+
+    )
+
+
+
+
+
+    conn.commit()
+
+    conn.close()
+
+
+
+
+
+
+
+# ==========================================================
+# Full Broadcast Function
+# ==========================================================
+
+
+async def broadcast_message(
+
+    bot,
+
+    message
+
+):
+
+
+    result = await send_broadcast_pro(
+
+        bot,
+
+        message
+
+    )
+
+
+
+
+
+    save_broadcast_history(
+
+        message,
+
+        result["success"],
+
+        result["failed"]
+
+    )
+
+
+
+
+
+    return result
