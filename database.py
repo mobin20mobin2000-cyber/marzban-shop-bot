@@ -10,6 +10,7 @@ import sqlite3
 DATABASE = "zeus.db"
 
 
+
 # ==========================================================
 # Database Connection
 # ==========================================================
@@ -26,6 +27,7 @@ def get_db():
 
 
 
+
 # ==========================================================
 # Initialize Database
 # ==========================================================
@@ -37,7 +39,9 @@ def init_db():
     cursor = db.cursor()
 
 
-    # Users
+    # =========================
+    # Users Table
+    # =========================
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
@@ -55,7 +59,9 @@ def init_db():
 
 
 
-    # Orders
+    # =========================
+    # Orders Table
+    # =========================
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS orders(
@@ -72,6 +78,8 @@ def init_db():
 
         price INTEGER,
 
+        coupon TEXT,
+
         status TEXT DEFAULT 'pending',
 
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -81,7 +89,9 @@ def init_db():
 
 
 
-    # Services
+    # =========================
+    # Subscriptions Table
+    # =========================
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS subscriptions(
@@ -98,6 +108,8 @@ def init_db():
 
         days INTEGER,
 
+        expire_date TEXT,
+
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
     )
@@ -105,7 +117,9 @@ def init_db():
 
 
 
-    # Receipts
+    # =========================
+    # Receipts Table
+    # =========================
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS receipts(
@@ -125,7 +139,9 @@ def init_db():
 
 
 
-    # Support
+    # =========================
+    # Support Table
+    # =========================
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS support(
@@ -135,6 +151,30 @@ def init_db():
         telegram_id INTEGER,
 
         message TEXT,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # =========================
+    # Coupons Table
+    # =========================
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS coupons(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        code TEXT UNIQUE,
+
+        percent INTEGER,
+
+        max_use INTEGER,
+
+        used INTEGER DEFAULT 0,
 
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
@@ -171,7 +211,9 @@ def add_user(
             telegram_id,
             username
         )
+
         VALUES (?,?)
+
         """,
         (
             telegram_id,
@@ -186,6 +228,11 @@ def add_user(
 
 
 
+
+# ==========================================================
+# Get User
+# ==========================================================
+
 def get_user(
     telegram_id
 ):
@@ -198,8 +245,11 @@ def get_user(
     cursor.execute(
         """
         SELECT *
+
         FROM users
+
         WHERE telegram_id=?
+
         """,
         (
             telegram_id,
@@ -209,12 +259,52 @@ def get_user(
 
     user = cursor.fetchone()
 
+
     db.close()
 
 
     return user
 
 
+
+
+# ==========================================================
+# All Users
+# ==========================================================
+
+def all_users():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM users
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    users = cursor.fetchall()
+
+
+    db.close()
+
+
+    return users
+
+
+
+
+# ==========================================================
+# Users Count
+# ==========================================================
 
 def users_count():
 
@@ -226,7 +316,9 @@ def users_count():
     cursor.execute(
         """
         SELECT COUNT(*)
+
         FROM users
+
         """
     )
 
@@ -244,6 +336,7 @@ def users_count():
 # ==========================================================
 
 
+
 # ==========================================================
 # Create Order
 # ==========================================================
@@ -253,7 +346,8 @@ def create_order(
     plan,
     volume,
     days,
-    price
+    price,
+    coupon=None
 ):
 
     db = get_db()
@@ -269,16 +363,20 @@ def create_order(
             plan,
             volume,
             days,
-            price
+            price,
+            coupon
         )
-        VALUES (?,?,?,?,?)
+
+        VALUES (?,?,?,?,?,?)
+
         """,
         (
             telegram_id,
             plan,
             volume,
             days,
-            price
+            price,
+            coupon
         )
     )
 
@@ -296,8 +394,9 @@ def create_order(
 
 
 
+
 # ==========================================================
-# Get Order By User
+# Get Last User Order
 # ==========================================================
 
 def get_order(
@@ -312,10 +411,15 @@ def get_order(
     cursor.execute(
         """
         SELECT *
+
         FROM orders
+
         WHERE telegram_id=?
+
         ORDER BY id DESC
+
         LIMIT 1
+
         """,
         (
             telegram_id,
@@ -330,6 +434,7 @@ def get_order(
 
 
     return order
+
 
 
 
@@ -349,8 +454,11 @@ def get_order_by_id(
     cursor.execute(
         """
         SELECT *
+
         FROM orders
+
         WHERE id=?
+
         """,
         (
             order_id,
@@ -365,6 +473,7 @@ def get_order_by_id(
 
 
     return order
+
 
 
 
@@ -404,6 +513,7 @@ def update_order_status(
 
 
 
+
 # ==========================================================
 # Approve Payment
 # ==========================================================
@@ -419,6 +529,7 @@ def approve_payment(
 
 
 
+
 # ==========================================================
 # Reject Payment
 # ==========================================================
@@ -431,6 +542,7 @@ def reject_payment(
         telegram_id,
         "rejected"
     )
+
 
 
 
@@ -454,6 +566,7 @@ def pending_orders():
         WHERE status='pending'
 
         ORDER BY id DESC
+
         """
     )
 
@@ -465,6 +578,7 @@ def pending_orders():
 
 
     return orders
+
 
 
 
@@ -488,6 +602,7 @@ def approved_orders():
         WHERE status='approved'
 
         ORDER BY id DESC
+
         """
     )
 
@@ -499,6 +614,7 @@ def approved_orders():
 
 
     return orders
+
 
 
 
@@ -520,6 +636,7 @@ def delete_order(
         DELETE FROM orders
 
         WHERE id=?
+
         """,
         (
             order_id,
@@ -536,6 +653,7 @@ def delete_order(
 # ==========================================================
 
 
+
 # ==========================================================
 # Save Service
 # ==========================================================
@@ -545,7 +663,8 @@ def save_service(
     username,
     subscription_url,
     volume,
-    days
+    days,
+    expire_date=None
 ):
 
     db = get_db()
@@ -561,10 +680,11 @@ def save_service(
             username,
             subscription_url,
             volume,
-            days
+            days,
+            expire_date
         )
 
-        VALUES (?,?,?,?,?)
+        VALUES (?,?,?,?,?,?)
 
         """,
         (
@@ -572,7 +692,8 @@ def save_service(
             username,
             subscription_url,
             volume,
-            days
+            days,
+            expire_date
         )
     )
 
@@ -580,6 +701,7 @@ def save_service(
     db.commit()
 
     db.close()
+
 
 
 
@@ -625,6 +747,7 @@ def get_user_service(
 
 
 
+
 # ==========================================================
 # All Services
 # ==========================================================
@@ -658,8 +781,9 @@ def all_services():
 
 
 
+
 # ==========================================================
-# Service Count
+# Services Count
 # ==========================================================
 
 def services_count():
@@ -690,11 +814,13 @@ def services_count():
 
 
 
-
 # ==========================================================
 # Receipts
 # ==========================================================
 
+
+
+# Save Receipt
 
 def save_receipt(
     telegram_id,
@@ -730,8 +856,9 @@ def save_receipt(
 
 
 
+
 # ==========================================================
-# Get Pending Receipts
+# Pending Receipts
 # ==========================================================
 
 def pending_receipts():
@@ -762,6 +889,7 @@ def pending_receipts():
 
 
     return receipts
+
 
 
 
@@ -802,11 +930,13 @@ def update_receipt_status(
 
 
 
-
 # ==========================================================
 # Support
 # ==========================================================
 
+
+
+# Save Support Message
 
 def save_support_message(
     telegram_id,
@@ -842,6 +972,7 @@ def save_support_message(
 
 
 
+
 # ==========================================================
 # All Support Messages
 # ==========================================================
@@ -873,13 +1004,14 @@ def all_support_messages():
 
     return messages
     # ==========================================================
-# Statistics
+# Statistics + Coupons
 # Part 4/4
 # ==========================================================
 
 
+
 # ==========================================================
-# Count Today Users
+# Today Users Count
 # ==========================================================
 
 def today_users_count():
@@ -908,6 +1040,7 @@ def today_users_count():
 
 
     return count
+
 
 
 
@@ -944,6 +1077,7 @@ def sales_count():
 
 
 
+
 # ==========================================================
 # Total Income
 # ==========================================================
@@ -977,8 +1111,9 @@ def total_income():
 
 
 
+
 # ==========================================================
-# Pending Payment Count
+# Pending Payments Count
 # ==========================================================
 
 def pending_count():
@@ -1008,38 +1143,6 @@ def pending_count():
 
     return count
 
-
-
-# ==========================================================
-# All Users
-# ==========================================================
-
-def all_users():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT *
-
-        FROM users
-
-        ORDER BY id DESC
-
-        """
-    )
-
-
-    users = cursor.fetchall()
-
-
-    db.close()
-
-
-    return users
 
 
 
@@ -1086,6 +1189,221 @@ def search_users(
 
 
 
+
+# ==========================================================
+# Coupon System
+# ==========================================================
+
+
+def create_coupon(
+    code,
+    percent,
+    max_use
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        INSERT INTO coupons
+        (
+            code,
+            percent,
+            max_use
+        )
+
+        VALUES (?,?,?)
+
+        """,
+        (
+            code.upper(),
+            percent,
+            max_use
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# Get Coupon
+# ==========================================================
+
+def get_coupon(
+    code
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM coupons
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    coupon = cursor.fetchone()
+
+
+    db.close()
+
+
+    return coupon
+
+
+
+
+# ==========================================================
+# Check Coupon
+# ==========================================================
+
+def check_coupon(
+    code
+):
+
+    coupon = get_coupon(
+        code
+    )
+
+
+    if not coupon:
+
+        return None
+
+
+
+    if coupon["used"] >= coupon["max_use"]:
+
+        return None
+
+
+
+    return coupon
+
+
+
+
+# ==========================================================
+# Use Coupon
+# ==========================================================
+
+def use_coupon(
+    code
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        UPDATE coupons
+
+        SET used = used + 1
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# All Coupons
+# ==========================================================
+
+def all_coupons():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM coupons
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    coupons = cursor.fetchall()
+
+
+    db.close()
+
+
+    return coupons
+
+
+
+
+# ==========================================================
+# Delete Coupon
+# ==========================================================
+
+def delete_coupon(
+    code
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        DELETE FROM coupons
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
 # ==========================================================
 # Dashboard Stats
 # ==========================================================
@@ -1122,6 +1440,7 @@ def get_stats():
 
 
 
+
 # ==========================================================
 # Database Test
 # ==========================================================
@@ -1134,7 +1453,9 @@ def test_database():
 
         db.close()
 
+
         return True
+
 
 
     except Exception as error:
