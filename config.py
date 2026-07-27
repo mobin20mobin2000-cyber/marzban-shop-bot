@@ -1,98 +1,23 @@
-# ==========================================================
-# Zeus Shop VPN PRO v2
-# config.py
-# ==========================================================
-
 import os
 
 # ==========================================================
 # Telegram
 # ==========================================================
 
-BOT_TOKEN = os.getenv("8709572517:AAFK3-EPY_dAI7tjGm2wh_26aey5wIJo4PU")
-
-ADMIN_ID = int(os.getenv("5769833164", "0"))
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 
 # ==========================================================
 # Payment
 # ==========================================================
 
 CARD_NUMBER = os.getenv("CARD_NUMBER")
-
-CARD_HOLDER = "6219-8619-8557-1842"
+CARD_HOLDER = os.getenv("CARD_HOLDER")
 
 # ==========================================================
 # Marzban
 # ==========================================================
 
-MARZBAN_URL = os.getenv("https://marzban-panel-production-9523.up.railway.app")
-
-MARZBAN_USERNAME = os.getenv("mobin")
-
-MARZBAN_PASSWORD = os.getenv("009900")
-
-# ==========================================================
-# Channel
-# ==========================================================
-
-CHANNEL = "@Vpn1_v2rayNG"
-
-# ==========================================================
-# Database
-# ==========================================================
-
-DATABASE_NAME = "zeus.db"
-
-# ==========================================================
-# Plans
-# ==========================================================
-
-PLANS = {
-
-    "plan_50": {
-        "id": 1,
-        "name": "🥉 50GB | 30 روز",
-        "volume": 50,
-        "days": 30,
-        "price": 70000,
-    },
-
-    "plan_100": {
-        "id": 2,
-        "name": "🥈 100GB | 30 روز",
-        "volume": 100,
-        "days": 30,
-        "price": 140000,
-    },
-
-    "plan_unlimited": {
-        "id": 3,
-        "name": "🥇 نامحدود | 30 روز",
-        "volume": 0,
-        "days": 30,
-        "price": 165000,
-    },
-
-}
-
-# ==========================================================
-# Discounts
-# ==========================================================
-
-DISCOUNT_ENABLED = True
-
-DISCOUNT_CODES = {
-    "ZEUS20": 20,
-    "WELCOME10": 10,
-    "VIP30": 30,
-}
-
-# ==========================================================
-# Robot
-# ==========================================================
-
-MAX_SUPPORT_MESSAGE = 2000
-
-MAX_BROADCAST_PER_SECOND = 20
-
-LOG_LEVEL = "INFO"
+MARZBAN_URL = os.getenv("MARZBAN_URL")
+MARZBAN_USERNAME = os.getenv("MARZBAN_USERNAME")
+MARZBAN_PASSWORD = os.getenv("MARZBAN_PASSWORD")
