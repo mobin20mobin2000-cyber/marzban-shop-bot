@@ -10,8 +10,9 @@ import sqlite3
 DATABASE = "zeus.db"
 
 
+
 # ==========================================================
-# Connection
+# اتصال دیتابیس
 # ==========================================================
 
 def get_db():
@@ -27,7 +28,7 @@ def get_db():
 
 
 # ==========================================================
-# Initialize Database
+# ساخت دیتابیس
 # ==========================================================
 
 def init_db():
@@ -156,17 +157,16 @@ def init_db():
     """)
 
 
+
     db.commit()
 
     db.close()
 
 
 
-
 # ==========================================================
 # Users
 # ==========================================================
-
 
 def add_user(
     telegram_id,
@@ -200,7 +200,6 @@ def add_user(
 
 
 
-
 def get_user(
     telegram_id
 ):
@@ -212,12 +211,83 @@ def get_user(
 
     cursor.execute(
         """
+        SELECT *
 
+        FROM users
+
+        WHERE telegram_id=?
+
+        """,
+        (
+            telegram_id,
+        )
+    )
+
+
+    user = cursor.fetchone()
+
+    db.close()
+
+
+    return user
+
+
+
+def users_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM users
+        """
+    )
+
+
+    count = cursor.fetchone()[0]
+
+    db.close()
+
+
+    return count
+
+
+
+def all_users():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+        FROM users
+        ORDER BY id DESC
+        """
+    )
+
+
+    users = cursor.fetchall()
+
+    db.close()
+
+
+    return users
     # ==========================================================
 # Orders
 # Part 2/4
 # ==========================================================
 
+
+# ==========================================================
+# ساخت سفارش
+# ==========================================================
 
 def create_order(
     telegram_id,
@@ -274,9 +344,8 @@ def create_order(
 
 
 # ==========================================================
-# Get Order By ID
+# گرفتن سفارش با ID
 # ==========================================================
-
 
 def get_order_by_id(
     order_id
@@ -297,7 +366,7 @@ def get_order_by_id(
 
         """,
         (
-            order_id
+            order_id,
         )
     )
 
@@ -314,9 +383,8 @@ def get_order_by_id(
 
 
 # ==========================================================
-# Last User Order
+# آخرین سفارش کاربر
 # ==========================================================
-
 
 def last_order(
     telegram_id
@@ -341,7 +409,7 @@ def last_order(
 
         """,
         (
-            telegram_id
+            telegram_id,
         )
     )
 
@@ -358,9 +426,8 @@ def last_order(
 
 
 # ==========================================================
-# Update Order Status
+# تغییر وضعیت سفارش
 # ==========================================================
-
 
 def update_order_status(
     order_id,
@@ -396,9 +463,8 @@ def update_order_status(
 
 
 # ==========================================================
-# Approve Payment
+# تایید پرداخت
 # ==========================================================
-
 
 def approve_payment(
     order_id
@@ -413,9 +479,8 @@ def approve_payment(
 
 
 # ==========================================================
-# Reject Payment
+# رد پرداخت
 # ==========================================================
-
 
 def reject_payment(
     order_id
@@ -430,9 +495,8 @@ def reject_payment(
 
 
 # ==========================================================
-# Pending Orders
+# سفارش‌های در انتظار
 # ==========================================================
-
 
 def pending_orders():
 
@@ -467,9 +531,8 @@ def pending_orders():
 
 
 # ==========================================================
-# Approved Orders
+# سفارش‌های تایید شده
 # ==========================================================
-
 
 def approved_orders():
 
@@ -504,9 +567,8 @@ def approved_orders():
 
 
 # ==========================================================
-# Delete Order
+# حذف سفارش
 # ==========================================================
-
 
 def delete_order(
     order_id
@@ -525,7 +587,120 @@ def delete_order(
 
         """,
         (
-            order_id
+            order_id,
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# رسید پرداخت
+# ==========================================================
+
+
+def save_receipt(
+    telegram_id,
+    file_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        INSERT INTO receipts
+        (
+            telegram_id,
+            file_id
+        )
+
+        VALUES (?,?)
+
+        """,
+        (
+            telegram_id,
+            file_id
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# رسیدهای در انتظار
+# ==========================================================
+
+def pending_receipts():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM receipts
+
+        WHERE status='pending'
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    receipts = cursor.fetchall()
+
+
+    db.close()
+
+
+    return receipts
+
+
+
+
+# ==========================================================
+# تغییر وضعیت رسید
+# ==========================================================
+
+def update_receipt_status(
+    telegram_id,
+    status
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        UPDATE receipts
+
+        SET status=?
+
+        WHERE telegram_id=?
+
+        """,
+        (
+            status,
+            telegram_id
         )
     )
 
@@ -538,6 +713,10 @@ def delete_order(
 # Part 3/4
 # ==========================================================
 
+
+# ==========================================================
+# ذخیره سرویس
+# ==========================================================
 
 def save_service(
     telegram_id,
@@ -590,9 +769,9 @@ def save_service(
 
 
 # ==========================================================
-# Get User Service
+# گرفتن سرویس کاربر
+# (رفع خطای get_user_service)
 # ==========================================================
-
 
 def get_user_service(
     telegram_id
@@ -617,7 +796,7 @@ def get_user_service(
 
         """,
         (
-            telegram_id
+            telegram_id,
         )
     )
 
@@ -634,9 +813,8 @@ def get_user_service(
 
 
 # ==========================================================
-# All Services
+# همه سرویس‌ها
 # ==========================================================
-
 
 def all_services():
 
@@ -669,9 +847,8 @@ def all_services():
 
 
 # ==========================================================
-# Services Count
+# تعداد سرویس‌ها
 # ==========================================================
-
 
 def services_count():
 
@@ -702,112 +879,7 @@ def services_count():
 
 
 # ==========================================================
-# Receipts
-# ==========================================================
-
-
-def save_receipt(
-    telegram_id,
-    file_id
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        INSERT INTO receipts
-        (
-            telegram_id,
-            file_id
-        )
-
-        VALUES (?,?)
-
-        """,
-        (
-            telegram_id,
-            file_id
-        )
-    )
-
-
-    db.commit()
-
-    db.close()
-
-
-
-
-def pending_receipts():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT *
-
-        FROM receipts
-
-        WHERE status='pending'
-
-        ORDER BY id DESC
-
-        """
-    )
-
-
-    receipts = cursor.fetchall()
-
-
-    db.close()
-
-
-    return receipts
-
-
-
-
-def update_receipt_status(
-    telegram_id,
-    status
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        UPDATE receipts
-
-        SET status=?
-
-        WHERE telegram_id=?
-
-        """,
-        (
-            status,
-            telegram_id
-        )
-    )
-
-
-    db.commit()
-
-    db.close()
-
-
-
-
-# ==========================================================
-# Support
+# پشتیبانی
 # ==========================================================
 
 
@@ -878,6 +950,10 @@ def all_support_messages():
 # ==========================================================
 
 
+# ==========================================================
+# ساخت کد تخفیف
+# ==========================================================
+
 def create_coupon(
     code,
     percent,
@@ -916,6 +992,10 @@ def create_coupon(
 
 
 
+# ==========================================================
+# دریافت کد تخفیف
+# ==========================================================
+
 def get_coupon(
     code
 ):
@@ -935,7 +1015,7 @@ def get_coupon(
 
         """,
         (
-            code.upper()
+            code.upper(),
         )
     )
 
@@ -951,6 +1031,10 @@ def get_coupon(
 
 
 
+# ==========================================================
+# بررسی کد تخفیف
+# ==========================================================
+
 def check_coupon(
     code
 ):
@@ -965,17 +1049,19 @@ def check_coupon(
         return None
 
 
-
     if coupon["used"] >= coupon["max_use"]:
 
         return None
-
 
 
     return coupon
 
 
 
+
+# ==========================================================
+# استفاده از کد تخفیف
+# ==========================================================
 
 def use_coupon(
     code
@@ -996,7 +1082,7 @@ def use_coupon(
 
         """,
         (
-            code.upper()
+            code.upper(),
         )
     )
 
@@ -1007,6 +1093,10 @@ def use_coupon(
 
 
 
+
+# ==========================================================
+# همه کدها
+# ==========================================================
 
 def all_coupons():
 
@@ -1038,6 +1128,10 @@ def all_coupons():
 
 
 
+# ==========================================================
+# حذف کد تخفیف
+# ==========================================================
+
 def delete_coupon(
     code
 ):
@@ -1055,7 +1149,7 @@ def delete_coupon(
 
         """,
         (
-            code.upper()
+            code.upper(),
         )
     )
 
@@ -1068,7 +1162,7 @@ def delete_coupon(
 
 
 # ==========================================================
-# Statistics
+# آمار داشبورد
 # ==========================================================
 
 
@@ -1192,6 +1286,10 @@ def pending_count():
 
 
 
+# ==========================================================
+# جستجوی کاربر
+# ==========================================================
+
 def search_users(
     text
 ):
@@ -1232,21 +1330,31 @@ def search_users(
 
 
 
+# ==========================================================
+# آمار کامل
+# ==========================================================
+
 def get_stats():
 
     return {
 
-        "users": users_count(),
+        "users":
+        users_count(),
 
-        "today_users": today_users_count(),
+        "today_users":
+        today_users_count(),
 
-        "sales": sales_count(),
+        "sales":
+        sales_count(),
 
-        "subscriptions": services_count(),
+        "subscriptions":
+        services_count(),
 
-        "income": total_income(),
+        "income":
+        total_income(),
 
-        "pending": pending_count()
+        "pending":
+        pending_count()
 
     }
 
@@ -1254,9 +1362,8 @@ def get_stats():
 
 
 # ==========================================================
-# Database Test
+# تست دیتابیس
 # ==========================================================
-
 
 def test_database():
 
@@ -1277,7 +1384,6 @@ def test_database():
         )
 
         return False
-
 
 
 
