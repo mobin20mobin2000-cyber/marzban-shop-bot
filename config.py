@@ -3,198 +3,79 @@
 # config.py
 # ==========================================================
 
-import os
+
+# توکن ربات
+BOT_TOKEN = "8709572517:AAFK3-EPY_dAI7tjGm2wh_26aey5wIJo4PU"
 
 
-# ==========================================================
-# Telegram
-# ==========================================================
 
-BOT_TOKEN = os.getenv(
-    "BOT_TOKEN",
-    ""
-)
+# آیدی ادمین
+# عدد خودت را بگذار
+ADMIN_ID = 5769833164
 
 
-ADMIN_ID = int(
-    os.getenv(
-        "ADMIN_ID",
-        "0"
-    )
-)
+
+# شماره کارت
+CARD_NUMBER = "6219-8619-8557-1842"
 
 
-# ==========================================================
-# Channel
-# ==========================================================
 
-CHANNEL_USERNAME = os.getenv(
-    "CHANNEL_USERNAME",
-    "Vpn1_v2rayNG"
-)
-
-
-CHANNEL_ID = os.getenv(
-    "CHANNEL_ID",
-    "@Vpn1_v2rayNG"
-)
-
-
-CHANNEL_LINK = os.getenv(
-    "CHANNEL_LINK",
-    "https://t.me/Vpn1_v2rayNG"
-)
-
-
-# ==========================================================
-# Payment
-# ==========================================================
-
-CARD_NUMBER = os.getenv(
-    "CARD_NUMBER",
-    "0000-0000-0000-0000"
-)
-
-
-CARD_OWNER = os.getenv(
-    "CARD_OWNER",
-    "Zeus Shop"
-)
-
-
-# ==========================================================
 # Marzban
-# ==========================================================
 
-MARZBAN_URL = os.getenv(
-    "MARZBAN_URL",
-    ""
-)
+"MARZBAN_URL = "https://marzban-panel-production-9523.up.railway.app""
 
+MARZBAN_USERNAME = "mobin"
 
-MARZBAN_USERNAME = os.getenv(
-    "MARZBAN_USERNAME",
-    ""
-)
+MARZBAN_PASSWORD = "009900"
 
 
-MARZBAN_PASSWORD = os.getenv(
-    "MARZBAN_PASSWORD",
-    ""
-)
+
+# کانال
+
+CHANNEL = "@Vpn1_v2rayNG"
 
 
-# ==========================================================
-# Plans
-# ==========================================================
+
+# قیمت‌ها
 
 PLANS = {
 
-    "plan_30": {
+    "plan1": {
 
-        "name": "یک ماهه",
-
-        "days": 30,
+        "name": "1 ماهه",
 
         "volume": 50,
 
-        "price": 50000
+        "days": 30,
+
+        "price": 70000
 
     },
 
 
-    "plan_60": {
+    "plan2": {
 
-        "name": "دو ماهه",
-
-        "days": 60,
+        "name": "1 ماهه",
 
         "volume": 100,
 
-        "price": 90000
+        "days": 30,
+
+        "price": 140000
 
     },
 
 
-    "plan_90": {
+    "plan3": {
 
-        "name": "سه ماهه",
+        "name": "1 ماهه",
 
-        "days": 90,
+        "volume": نامحدود,
 
-        "volume": 200,
+        "days": 30,
 
-        "price": 150000
+        "price": 165000
 
     }
 
 }
-
-
-# ==========================================================
-# Config Check
-# ==========================================================
-
-def check_config():
-
-    errors = []
-
-
-    if not BOT_TOKEN:
-
-        errors.append(
-            "BOT_TOKEN"
-        )
-
-
-    if not ADMIN_ID:
-
-        errors.append(
-            "ADMIN_ID"
-        )
-
-
-    if not MARZBAN_URL:
-
-        errors.append(
-            "MARZBAN_URL"
-        )
-
-
-    if not MARZBAN_USERNAME:
-
-        errors.append(
-            "MARZBAN_USERNAME"
-        )
-
-
-    if not MARZBAN_PASSWORD:
-
-        errors.append(
-            "MARZBAN_PASSWORD"
-        )
-
-
-    if errors:
-
-        print(
-            "❌ تنظیمات ناقص است:"
-        )
-
-
-        for item in errors:
-
-            print(
-                f" - {item}"
-            )
-
-
-        return False
-
-
-    print(
-        "✅ Config loaded successfully"
-    )
-
-
-    return True
