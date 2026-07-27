@@ -1,1111 +1,426 @@
 # ==========================================================
 # Zeus Shop VPN PRO
 # marzban.py
-# Part 1/4
+# Part 1/5
 # ==========================================================
 
-
 import requests
-import random
-import string
-import time
-
-
 
 from config import (
     MARZBAN_URL,
     MARZBAN_USERNAME,
-    MARZBAN_PASSWORD
+    MARZBAN_PASSWORD,
 )
 
-
-
+TOKEN = None
 
 
 class Marzban:
 
-
     def __init__(self):
 
-        self.url = MARZBAN_URL.rstrip("/")
+        self.base_url = MARZBAN_URL.rstrip("/")
 
-        self.username = MARZBAN_USERNAME
-
-        self.password = MARZBAN_PASSWORD
-
-        self.token = None
-
-
-
-
+        self.token = self.login()
 
     # ======================================================
     # Login
     # ======================================================
 
-
     def login(self):
 
+        global TOKEN
 
-        try:
+        if TOKEN:
+            return TOKEN
 
+        url = f"{self.base_url}/api/admin/token"
 
-            response = requests.post(
+        response = requests.post(
+            url,
+            data={
+                "username": MARZBAN_USERNAME,
+                "password": MARZBAN_PASSWORD,
+            },
+            timeout=30,
+        )
 
-                f"{self.url}/api/admin/token",
+        response.raise_for_status()
 
-                data={
+        TOKEN = response.json()["access_token"]
 
-                    "username": self.username,
-
-                    "password": self.password
-
-                },
-
-                timeout=20
-
-            )
-
-
-
-            if response.status_code == 200:
-
-
-                self.token = response.json().get(
-
-                    "access_token"
-
-                )
-
-
-
-                if self.token:
-
-                    print(
-                        "✅ Marzban Connected"
-                    )
-
-                    return True
-
-
-
-
-
-            print(
-
-                "❌ Marzban Login Failed",
-
-                response.text
-
-            )
-
-
-            return False
-
-
-
-
-
-        except Exception as error:
-
-
-            print(
-
-                "❌ Marzban Error:",
-
-                error
-
-            )
-
-
-            return False
-
-
-
-
-
+        return TOKEN
 
     # ======================================================
     # Headers
     # ======================================================
 
-
     def headers(self):
 
-
-        if not self.token:
-
-
-            if not self.login():
-
-                return None
-
-
-
-
         return {
-
-
-            "Authorization":
-
-            f"Bearer {self.token}",
-
-
-
-            "Content-Type":
-
-            "application/json"
-
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
         }
-
-
-
-
-
-
-    # ======================================================
-    # GB To Byte
-    # ======================================================
-
-
-    def gb_to_bytes(
-
-        self,
-
-        gb
-
-    ):
-
-
-        return int(gb) * 1024 * 1024 * 1024
-
-
-
-
-
-    # ======================================================
-    # Random Username
-    # ======================================================
-
-
-    def random_username(self):
-
-
-        chars = (
-
-            string.ascii_lowercase
-
-            +
-
-            string.digits
-
-        )
-
-
-
-        name = "".join(
-
-            random.choice(chars)
-
-            for _ in range(8)
-
-        )
-
-
-
-        return "zeus_" + name
         # ==========================================================
-# Create & Get User
-# Part 2/4
+# Create User
 # ==========================================================
 
-
-
-    # ======================================================
-    # Create User
-    # ======================================================
-
-
-    def create_user(
-
+    def create_service(
         self,
-
-        username=None,
-
-        data_limit=0,
-
-        expire=None
-
+        volume,
+        days
     ):
 
-
-
-        headers = self.headers()
-
-
-
-        if not headers:
-
-            return None
-
-
-
-
-
-        if username is None:
-
-
-            username = self.random_username()
-
-
-
-
-
-        if expire is None:
-
-
-            expire = int(time.time()) + (
-
-                30 *
-
-                24 *
-
-                60 *
-
-                60
-
-            )
-
-
-
-
-
+        url = f"{self.base_url}/api/user"
 
         payload = {
 
-
-            "username": username,
-
+            "username": None,
 
             "proxies": {
-
-
-                "vless": {}
-
+                "vmess": {},
+                "vless": {},
+                "trojan": {},
+                "shadowsocks": {}
             },
 
+            "expire": days * 86400,
 
-            "expire": expire,
+            "data_limit": volume * 1024 * 1024 * 1024 if volume else 0,
 
+            "data_limit_reset_strategy": "no_reset",
 
-            "data_limit": data_limit,
+            "status": "active",
 
+            "note": "Zeus Shop VPN"
 
-            "data_limit_reset_strategy": "no_reset"
+        }
 
+        response = requests.post(
+
+            url,
+
+            headers=self.headers(),
+
+            json=payload,
+
+            timeout=30
+
+        )
+
+        response.raise_for_status()
+
+        user = response.json()
+
+        return {
+
+            "username": user["username"],
+
+            "subscription_url": user["subscription_url"]
 
         }
 
 
-
-
-
-
-        try:
-
-
-
-            response = requests.post(
-
-                f"{self.url}/api/user",
-
-                json=payload,
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-
-
-
-            print(
-
-                "CREATE USER:",
-
-                response.text
-
-            )
-
-
-
-
-
-            if response.status_code in [200,201]:
-
-
-                return response.json()
-
-
-
-
-
-            return None
-
-
-
-
-
-        except Exception as error:
-
-
-            print(
-
-                "CREATE USER ERROR:",
-
-                error
-
-            )
-
-
-            return None
-
-
-
-
-
-
-    # ======================================================
-    # Get User
-    # ======================================================
-
-
-    def get_user(
-
-        self,
-
-        username
-
-    ):
-
-
-        headers = self.headers()
-
-
-
-        if not headers:
-
-            return None
-
-
-
-
-
-
-        try:
-
-
-
-            response = requests.get(
-
-                f"{self.url}/api/user/{username}",
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-
-
-
-
-
-            if response.status_code == 200:
-
-
-                return response.json()
-
-
-
-
-
-            return None
-
-
-
-
-
-
-        except Exception as error:
-
-
-
-            print(
-
-                "GET USER ERROR:",
-
-                error
-
-            )
-
-
-            return None
-
-
-
-
-
-
-    # ======================================================
-    # Subscription Link
-    # ======================================================
-
-
-    def subscription(
-
-        self,
-
-        username
-
-    ):
-
-
-
-        user = self.get_user(
-
-            username
-
-        )
-
-
-
-        if not user:
-
-
-            return None
-
-
-
-
-
-        link = (
-
-            user.get("subscription_url")
-
-            or
-
-            user.get("subscription")
-
-        )
-
-
-
-
-
-        if not link:
-
-
-            return None
-
-
-
-
-
-        if link.startswith("http"):
-
-
-            return link
-
-
-
-
-
-        return self.url + link
-        # ==========================================================
-# User Management
-# Part 3/4
+# ==========================================================
+# Get User
 # ==========================================================
 
-
-
-    # ======================================================
-    # Delete User
-    # ======================================================
-
-
-    def delete_user(
-
+    def get_user(
         self,
-
         username
-
     ):
 
+        url = f"{self.base_url}/api/user/{username}"
 
-        headers = self.headers()
+        response = requests.get(
 
+            url,
 
+            headers=self.headers(),
 
-        if not headers:
-
-            return False
-
-
-
-
-
-        try:
-
-
-            response = requests.delete(
-
-                f"{self.url}/api/user/{username}",
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-
-
-
-
-            if response.status_code in [
-
-                200,
-
-                204
-
-            ]:
-
-
-                return True
-
-
-
-
-
-            print(
-
-                "DELETE ERROR:",
-
-                response.text
-
-            )
-
-
-
-            return False
-
-
-
-
-
-
-        except Exception as error:
-
-
-
-            print(
-
-                "DELETE USER ERROR:",
-
-                error
-
-            )
-
-
-            return False
-
-
-
-
-
-
-
-    # ======================================================
-    # Update User
-    # ======================================================
-
-
-    def update_user(
-
-        self,
-
-        username,
-
-        data_limit=None,
-
-        expire=None
-
-    ):
-
-
-
-        headers = self.headers()
-
-
-
-        if not headers:
-
-            return False
-
-
-
-
-
-        payload = {}
-
-
-
-
-
-        if data_limit is not None:
-
-
-            payload["data_limit"] = data_limit
-
-
-
-
-
-        if expire is not None:
-
-
-            payload["expire"] = expire
-
-
-
-
-
-
-        if not payload:
-
-
-            return False
-
-
-
-
-
-
-        try:
-
-
-
-            response = requests.put(
-
-                f"{self.url}/api/user/{username}",
-
-                json=payload,
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-
-
-
-
-
-            if response.status_code == 200:
-
-
-                return True
-
-
-
-
-
-
-            print(
-
-                "UPDATE ERROR:",
-
-                response.text
-
-            )
-
-
-
-            return False
-
-
-
-
-
-
-        except Exception as error:
-
-
-
-            print(
-
-                "UPDATE USER ERROR:",
-
-                error
-
-            )
-
-
-            return False
-
-
-
-
-
-
-
-    # ======================================================
-    # Check User Exists
-    # ======================================================
-
-
-    def user_exists(
-
-        self,
-
-        username
-
-    ):
-
-
-        user = self.get_user(
-
-            username
+            timeout=30
 
         )
 
+        response.raise_for_status()
+
+        return response.json()
+        # ==========================================================
+# Update User
+# ==========================================================
+
+    def update_service(
+        self,
+        username,
+        volume,
+        days
+    ):
+
+        url = f"{self.base_url}/api/user/{username}"
+
+        payload = {
+
+            "data_limit": (
+                volume * 1024 * 1024 * 1024
+                if volume > 0
+                else 0
+            ),
+
+            "expire": days * 86400,
+
+            "status": "active"
+
+        }
+
+        response = requests.put(
+
+            url,
+
+            headers=self.headers(),
+
+            json=payload,
+
+            timeout=30
+
+        )
+
+        response.raise_for_status()
+
+        return response.json()
 
 
-        return True if user else False
+# ==========================================================
+# Delete User
+# ==========================================================
+
+    def delete_service(
+        self,
+        username
+    ):
+
+        url = f"{self.base_url}/api/user/{username}"
+
+        response = requests.delete(
+
+            url,
+
+            headers=self.headers(),
+
+            timeout=30
+
+        )
+
+        response.raise_for_status()
+
+        return True
 
 
+# ==========================================================
+# Enable User
+# ==========================================================
+
+    def enable_service(
+        self,
+        username
+    ):
+
+        url = f"{self.base_url}/api/user/{username}"
+
+        payload = {
+
+            "status": "active"
+
+        }
+
+        response = requests.put(
+
+            url,
+
+            headers=self.headers(),
+
+            json=payload,
+
+            timeout=30
+
+        )
+
+        response.raise_for_status()
+
+        return response.json()
 
 
+# ==========================================================
+# Disable User
+# ==========================================================
 
-
-
-    # ======================================================
-    # Get All Users
-    # ======================================================
-
+    def disable_service(
+        self,
+        # ==========================================================
+# Users List
+# ==========================================================
 
     def get_users(self):
 
+        url = f"{self.base_url}/api/users"
 
-        headers = self.headers()
+        response = requests.get(
+            url,
+            headers=self.headers(),
+            timeout=30
+        )
+
+        response.raise_for_status()
+
+        return response.json()
 
 
+# ==========================================================
+# System Stats
+# ==========================================================
 
-        if not headers:
+    def get_system_stats(self):
 
-            return []
+        url = f"{self.base_url}/api/system"
+
+        response = requests.get(
+            url,
+            headers=self.headers(),
+            timeout=30
+        )
+
+        response.raise_for_status()
+
+        return response.json()
 
 
+# ==========================================================
+# Get Subscription Link
+# ==========================================================
+
+    def get_subscription(self, username):
+
+        user = self.get_user(username)
+
+        return user.get("subscription_url")
 
 
+# ==========================================================
+# Check User Exists
+# ==========================================================
 
-
+    def user_exists(self, username):
 
         try:
 
+            self.get_user(username)
+
+            return True
+
+        except Exception:
+
+            return False
 
 
-            response = requests.get(
-
-                f"{self.url}/api/users",
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-
-
-
-
-
-            if response.status_code == 200:
-
-
-                data = response.json()
-
-
-                return data.get(
-
-                    "users",
-
-                    []
-
-                )
-
-
-
-
-
-
-            return []
-
-
-
-
-
-
-        except Exception as error:
-
-
-
-            print(
-
-                "GET USERS ERROR:",
-
-                error
-
-            )
-
-
-            return []
-            # ==========================================================
-# Service Builder
-# Part 4/4
+# ==========================================================
+# Get User Usage
 # ==========================================================
 
+    def get_usage(self, username):
 
-
-    # ======================================================
-    # Test Connection
-    # ======================================================
-
-
-    def test_connection(self):
-
-
-        return self.login()
-
-
-
-
-
-    # ======================================================
-    # Panel Info
-    # ======================================================
-
-
-    def panel_info(self):
-
+        user = self.get_user(username)
 
         return {
 
+            "used": user.get("used_traffic", 0),
 
-            "url":
+            "limit": user.get("data_limit", 0),
 
-            self.url,
+            "status": user.get("status", "unknown"),
 
+            "expire": user.get("expire", 0)
 
-            "username":
+            }
+        # ==========================================================
+# Extra Functions
+# Part 5/5
+# ==========================================================
 
-            self.username,
+    def refresh_token(self):
+        """
+        دریافت مجدد توکن در صورت منقضی شدن
+        """
 
+        global TOKEN
 
-            "status":
+        TOKEN = None
 
-            "online"
+        self.token = self.login()
 
-            if self.token
-
-            else
-
-            "offline"
-
-
-        }
-
-
-
-
-
-
-    # ======================================================
-    # Create Complete Service
-    # ======================================================
+        return self.token
 
 
-    def create_service(
+# ==========================================================
+# Connection Test
+# ==========================================================
 
-        self,
+    def ping(self):
 
-        volume,
+        try:
 
-        days
+            url = f"{self.base_url}/api/system"
 
-    ):
+            response = requests.get(
+                url,
+                headers=self.headers(),
+                timeout=10
+            )
+
+            return response.status_code == 200
+
+        except Exception:
+
+            return False
 
 
+# ==========================================================
+# Create Username
+# ==========================================================
 
-        # تبدیل حجم
+    def generate_username(self, user_id):
 
-        data_limit = self.gb_to_bytes(
+        import random
+        import string
 
-            volume
-
+        rand = "".join(
+            random.choice(
+                string.ascii_lowercase + string.digits
+            )
+            for _ in range(6)
         )
 
+        return f"z{user_id}{rand}"
 
 
+# ==========================================================
+# Close Session
+# ==========================================================
 
-
-        # تاریخ انقضا
-
-        expire = int(time.time()) + (
-
-            int(days)
-
-            *
-
-            24
-
-            *
-
-            60
-
-            *
-
-            60
-
-        )
-
-
-
-
-
-
-        user = self.create_user(
-
-            data_limit=data_limit,
-
-            expire=expire
-
-        )
-
-
-
-
-
-        if not user:
-
-
-            return None
-
-
-
-
-
-
-        username = user.get(
-
-            "username"
-
-        )
-
-
-
-
-
-        if not username:
-
-
-            return None
-
-
-
-
-
-
-        subscription = self.subscription(
-
-            username
-
-        )
-
-
-
-
-
-
-        return {
-
-
-            "username":
-
-            username,
-
-
-
-            "subscription_url":
-
-            subscription,
-
-
-
-            "volume":
-
-            volume,
-
-
-
-            "days":
-
-            days,
-
-
-
-            "expire":
-
-            expire
-
-
-        }
-
-
-
-
-
+    def close(self):
+        pass
 
 
 # ==========================================================
 # Test
 # ==========================================================
 
-
 if __name__ == "__main__":
 
+    panel = Marzban()
 
-    marzban = Marzban()
+    if panel.ping():
 
-
-
-    if marzban.test_connection():
-
-
-        print(
-
-            "✅ Panel OK"
-
-        )
-
+        print("✅ Marzban Connected")
 
     else:
 
-
-        print(
-
-            "❌ Panel Error"
-
-        )
+        print("❌ Marzban Connection Failed")
