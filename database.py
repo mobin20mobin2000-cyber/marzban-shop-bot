@@ -10,7 +10,6 @@ import sqlite3
 DATABASE = "zeus.db"
 
 
-
 # ==========================================================
 # Database Connection
 # ==========================================================
@@ -27,7 +26,6 @@ def get_db():
 
 
 
-
 # ==========================================================
 # Initialize Database
 # ==========================================================
@@ -39,13 +37,12 @@ def init_db():
     cursor = db.cursor()
 
 
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        telegram_id INTEGER UNIQUE NOT NULL,
+        telegram_id INTEGER UNIQUE,
 
         username TEXT,
 
@@ -55,13 +52,12 @@ def init_db():
     """)
 
 
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS orders(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        telegram_id INTEGER NOT NULL,
+        telegram_id INTEGER,
 
         plan TEXT,
 
@@ -81,13 +77,12 @@ def init_db():
     """)
 
 
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS subscriptions(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        telegram_id INTEGER NOT NULL,
+        telegram_id INTEGER,
 
         order_id INTEGER,
 
@@ -107,13 +102,12 @@ def init_db():
     """)
 
 
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS receipts(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        telegram_id INTEGER NOT NULL,
+        telegram_id INTEGER,
 
         file_id TEXT,
 
@@ -123,7 +117,6 @@ def init_db():
 
     )
     """)
-
 
 
     cursor.execute("""
@@ -137,13 +130,10 @@ def init_db():
 
         max_use INTEGER,
 
-        used INTEGER DEFAULT 0,
-
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        used INTEGER DEFAULT 0
 
     )
     """)
-
 
 
     cursor.execute("""
@@ -161,12 +151,9 @@ def init_db():
     """)
 
 
-
     db.commit()
 
     db.close()
-
-
 
 
 
@@ -209,8 +196,6 @@ def add_user(
 
 
 
-
-
 def get_user(
     telegram_id
 ):
@@ -230,20 +215,16 @@ def get_user(
 
         """,
         (
-            telegram_id,
+            telegram_id
         )
     )
 
 
     user = cursor.fetchone()
 
-
     db.close()
 
-
     return user
-
-
 
 
 
@@ -268,13 +249,9 @@ def all_users():
 
     users = cursor.fetchall()
 
-
     db.close()
 
-
     return users
-
-
 
 
 
@@ -290,16 +267,13 @@ def users_count():
         SELECT COUNT(*)
 
         FROM users
-
         """
     )
 
 
     count = cursor.fetchone()[0]
 
-
     db.close()
-
 
     return count
     # ==========================================================
@@ -363,6 +337,11 @@ def create_order(
 
 
 
+# ==========================================================
+# Get Order By ID
+# ==========================================================
+
+
 def get_order_by_id(
     order_id
 ):
@@ -382,7 +361,7 @@ def get_order_by_id(
 
         """,
         (
-            order_id,
+            order_id
         )
     )
 
@@ -397,6 +376,11 @@ def get_order_by_id(
 
 
 
+
+
+# ==========================================================
+# Last User Order
+# ==========================================================
 
 
 def last_order(
@@ -422,7 +406,7 @@ def last_order(
 
         """,
         (
-            telegram_id,
+            telegram_id
         )
     )
 
@@ -437,6 +421,11 @@ def last_order(
 
 
 
+
+
+# ==========================================================
+# Update Order Status
+# ==========================================================
 
 
 def update_order_status(
@@ -473,6 +462,11 @@ def update_order_status(
 
 
 
+# ==========================================================
+# Approve Payment
+# ==========================================================
+
+
 def approve_payment(
     order_id
 ):
@@ -486,6 +480,11 @@ def approve_payment(
 
 
 
+# ==========================================================
+# Reject Payment
+# ==========================================================
+
+
 def reject_payment(
     order_id
 ):
@@ -497,6 +496,11 @@ def reject_payment(
 
 
 
+
+
+# ==========================================================
+# Pending Orders
+# ==========================================================
 
 
 def pending_orders():
@@ -532,6 +536,11 @@ def pending_orders():
 
 
 
+# ==========================================================
+# Approved Orders
+# ==========================================================
+
+
 def approved_orders():
 
     db = get_db()
@@ -565,35 +574,9 @@ def approved_orders():
 
 
 
-def all_orders():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT *
-
-        FROM orders
-
-        ORDER BY id DESC
-
-        """
-    )
-
-
-    orders = cursor.fetchall()
-
-
-    db.close()
-
-
-    return orders
-
-
-
+# ==========================================================
+# Delete Order
+# ==========================================================
 
 
 def delete_order(
@@ -613,7 +596,7 @@ def delete_order(
 
         """,
         (
-            order_id,
+            order_id
         )
     )
 
@@ -622,8 +605,13 @@ def delete_order(
 
     db.close()
     # ==========================================================
-# Services
+# Services + Receipts + Support
 # Part 3/4
+# ==========================================================
+
+
+# ==========================================================
+# Save Service
 # ==========================================================
 
 
@@ -678,7 +666,10 @@ def save_service(
 
 
 
-# مهم: این تابع مشکل ImportError را حل می‌کند
+# ==========================================================
+# Get User Service
+# ==========================================================
+
 
 def get_user_service(
     telegram_id
@@ -703,7 +694,7 @@ def get_user_service(
 
         """,
         (
-            telegram_id,
+            telegram_id
         )
     )
 
@@ -718,6 +709,11 @@ def get_user_service(
 
 
 
+
+
+# ==========================================================
+# All Services
+# ==========================================================
 
 
 def all_services():
@@ -749,6 +745,11 @@ def all_services():
 
 
 
+
+
+# ==========================================================
+# Services Count
+# ==========================================================
 
 
 def services_count():
@@ -956,8 +957,13 @@ def all_support_messages():
 
     return messages
     # ==========================================================
-# Coupons
+# Coupons + Statistics
 # Part 4/4
+# ==========================================================
+
+
+# ==========================================================
+# Coupons
 # ==========================================================
 
 
@@ -1019,7 +1025,7 @@ def get_coupon(
 
         """,
         (
-            code.upper(),
+            code.upper()
         )
     )
 
@@ -1040,9 +1046,7 @@ def check_coupon(
     code
 ):
 
-    coupon = get_coupon(
-        code
-    )
+    coupon = get_coupon(code)
 
 
     if not coupon:
@@ -1080,7 +1084,7 @@ def use_coupon(
 
         """,
         (
-            code.upper(),
+            code.upper()
         )
     )
 
@@ -1141,7 +1145,7 @@ def delete_coupon(
 
         """,
         (
-            code.upper(),
+            code.upper()
         )
     )
 
@@ -1155,7 +1159,7 @@ def delete_coupon(
 
 
 # ==========================================================
-# Dashboard Statistics
+# Statistics
 # ==========================================================
 
 
@@ -1376,6 +1380,8 @@ def test_database():
         )
 
         return False
+
+
 
 
 
