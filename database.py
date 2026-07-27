@@ -10,9 +10,8 @@ import sqlite3
 DATABASE = "zeus.db"
 
 
-
 # ==========================================================
-# Database Connection
+# اتصال دیتابیس
 # ==========================================================
 
 def get_db():
@@ -27,28 +26,24 @@ def get_db():
 
 
 
-
 # ==========================================================
-# Initialize Database
+# ساخت جداول
 # ==========================================================
 
 def init_db():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
-    # =========================
-    # Users Table
-    # =========================
+    # کاربران
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        telegram_id INTEGER UNIQUE,
+        telegram_id INTEGER UNIQUE NOT NULL,
 
         username TEXT,
 
@@ -59,16 +54,14 @@ def init_db():
 
 
 
-    # =========================
-    # Orders Table
-    # =========================
+    # سفارش‌ها
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS orders(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        telegram_id INTEGER,
+        telegram_id INTEGER NOT NULL,
 
         plan TEXT,
 
@@ -89,16 +82,16 @@ def init_db():
 
 
 
-    # =========================
-    # Subscriptions Table
-    # =========================
+    # سرویس‌ها
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS subscriptions(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        telegram_id INTEGER,
+        telegram_id INTEGER NOT NULL,
+
+        order_id INTEGER,
 
         username TEXT,
 
@@ -117,16 +110,14 @@ def init_db():
 
 
 
-    # =========================
-    # Receipts Table
-    # =========================
+    # رسید پرداخت
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS receipts(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        telegram_id INTEGER,
+        telegram_id INTEGER NOT NULL,
 
         file_id TEXT,
 
@@ -139,9 +130,29 @@ def init_db():
 
 
 
-    # =========================
-    # Support Table
-    # =========================
+    # کد تخفیف
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS coupons(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        code TEXT UNIQUE NOT NULL,
+
+        percent INTEGER NOT NULL,
+
+        max_use INTEGER DEFAULT 1,
+
+        used INTEGER DEFAULT 0,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # پشتیبانی
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS support(
@@ -159,38 +170,13 @@ def init_db():
 
 
 
-    # =========================
-    # Coupons Table
-    # =========================
-
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS coupons(
-
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-        code TEXT UNIQUE,
-
-        percent INTEGER,
-
-        max_use INTEGER,
-
-        used INTEGER DEFAULT 0,
-
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-    )
-    """)
-
-
-
     db.commit()
-
     db.close()
 
 
 
 # ==========================================================
-# Users
+# کاربران
 # ==========================================================
 
 
@@ -200,13 +186,13 @@ def add_user(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
     cursor.execute(
         """
         INSERT OR IGNORE INTO users
+
         (
             telegram_id,
             username
@@ -223,22 +209,15 @@ def add_user(
 
 
     db.commit()
-
     db.close()
 
 
-
-
-# ==========================================================
-# Get User
-# ==========================================================
 
 def get_user(
     telegram_id
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -259,23 +238,15 @@ def get_user(
 
     user = cursor.fetchone()
 
-
     db.close()
-
 
     return user
 
 
 
-
-# ==========================================================
-# All Users
-# ==========================================================
-
 def all_users():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -293,23 +264,15 @@ def all_users():
 
     users = cursor.fetchall()
 
-
     db.close()
-
 
     return users
 
 
 
-
-# ==========================================================
-# Users Count
-# ==========================================================
-
 def users_count():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -325,20 +288,17 @@ def users_count():
 
     count = cursor.fetchone()[0]
 
-
     db.close()
-
 
     return count
     # ==========================================================
-# Orders
+# سفارش‌ها
 # Part 2/4
 # ==========================================================
 
 
-
 # ==========================================================
-# Create Order
+# ساخت سفارش جدید
 # ==========================================================
 
 def create_order(
@@ -351,13 +311,13 @@ def create_order(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
     cursor.execute(
         """
         INSERT INTO orders
+
         (
             telegram_id,
             plan,
@@ -396,15 +356,52 @@ def create_order(
 
 
 # ==========================================================
-# Get Last User Order
+# دریافت سفارش با آیدی سفارش
 # ==========================================================
 
-def get_order(
+def get_order_by_id(
+    order_id
+):
+
+    db = get_db()
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE id=?
+
+        """,
+        (
+            order_id,
+        )
+    )
+
+
+    order = cursor.fetchone()
+
+
+    db.close()
+
+
+    return order
+
+
+
+
+# ==========================================================
+# آخرین سفارش کاربر
+# ==========================================================
+
+def last_order(
     telegram_id
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -439,55 +436,15 @@ def get_order(
 
 
 # ==========================================================
-# Get Order By ID
-# ==========================================================
-
-def get_order_by_id(
-    order_id
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT *
-
-        FROM orders
-
-        WHERE id=?
-
-        """,
-        (
-            order_id,
-        )
-    )
-
-
-    order = cursor.fetchone()
-
-
-    db.close()
-
-
-    return order
-
-
-
-
-# ==========================================================
-# Update Order Status
+# تغییر وضعیت سفارش
 # ==========================================================
 
 def update_order_status(
-    telegram_id,
+    order_id,
     status
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -497,12 +454,12 @@ def update_order_status(
 
         SET status=?
 
-        WHERE telegram_id=?
+        WHERE id=?
 
         """,
         (
             status,
-            telegram_id
+            order_id
         )
     )
 
@@ -515,15 +472,15 @@ def update_order_status(
 
 
 # ==========================================================
-# Approve Payment
+# تایید پرداخت
 # ==========================================================
 
 def approve_payment(
-    telegram_id
+    order_id
 ):
 
     update_order_status(
-        telegram_id,
+        order_id,
         "approved"
     )
 
@@ -531,15 +488,15 @@ def approve_payment(
 
 
 # ==========================================================
-# Reject Payment
+# رد پرداخت
 # ==========================================================
 
 def reject_payment(
-    telegram_id
+    order_id
 ):
 
     update_order_status(
-        telegram_id,
+        order_id,
         "rejected"
     )
 
@@ -547,13 +504,12 @@ def reject_payment(
 
 
 # ==========================================================
-# Pending Orders
+# سفارش‌های در انتظار
 # ==========================================================
 
 def pending_orders():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -583,13 +539,12 @@ def pending_orders():
 
 
 # ==========================================================
-# Approved Orders
+# سفارش‌های تایید شده
 # ==========================================================
 
 def approved_orders():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -619,7 +574,7 @@ def approved_orders():
 
 
 # ==========================================================
-# Delete Order
+# حذف سفارش
 # ==========================================================
 
 def delete_order(
@@ -627,7 +582,6 @@ def delete_order(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -648,18 +602,18 @@ def delete_order(
 
     db.close()
     # ==========================================================
-# Services
+# سرویس‌ها
 # Part 3/4
 # ==========================================================
 
 
-
 # ==========================================================
-# Save Service
+# ذخیره سرویس ساخته شده
 # ==========================================================
 
 def save_service(
     telegram_id,
+    order_id,
     username,
     subscription_url,
     volume,
@@ -668,15 +622,16 @@ def save_service(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
     cursor.execute(
         """
         INSERT INTO subscriptions
+
         (
             telegram_id,
+            order_id,
             username,
             subscription_url,
             volume,
@@ -684,11 +639,12 @@ def save_service(
             expire_date
         )
 
-        VALUES (?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?)
 
         """,
         (
             telegram_id,
+            order_id,
             username,
             subscription_url,
             volume,
@@ -706,7 +662,7 @@ def save_service(
 
 
 # ==========================================================
-# Get User Service
+# دریافت سرویس کاربر
 # ==========================================================
 
 def get_user_service(
@@ -714,7 +670,6 @@ def get_user_service(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -749,13 +704,12 @@ def get_user_service(
 
 
 # ==========================================================
-# All Services
+# همه سرویس‌ها
 # ==========================================================
 
 def all_services():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -783,13 +737,12 @@ def all_services():
 
 
 # ==========================================================
-# Services Count
+# تعداد سرویس‌ها
 # ==========================================================
 
 def services_count():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -815,12 +768,9 @@ def services_count():
 
 
 # ==========================================================
-# Receipts
+# رسید پرداخت
 # ==========================================================
 
-
-
-# Save Receipt
 
 def save_receipt(
     telegram_id,
@@ -828,13 +778,13 @@ def save_receipt(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
     cursor.execute(
         """
         INSERT INTO receipts
+
         (
             telegram_id,
             file_id
@@ -858,13 +808,12 @@ def save_receipt(
 
 
 # ==========================================================
-# Pending Receipts
+# رسیدهای در انتظار
 # ==========================================================
 
 def pending_receipts():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -894,7 +843,7 @@ def pending_receipts():
 
 
 # ==========================================================
-# Update Receipt Status
+# تغییر وضعیت رسید
 # ==========================================================
 
 def update_receipt_status(
@@ -903,7 +852,6 @@ def update_receipt_status(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -931,12 +879,9 @@ def update_receipt_status(
 
 
 # ==========================================================
-# Support
+# پشتیبانی
 # ==========================================================
 
-
-
-# Save Support Message
 
 def save_support_message(
     telegram_id,
@@ -944,13 +889,13 @@ def save_support_message(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
     cursor.execute(
         """
         INSERT INTO support
+
         (
             telegram_id,
             message
@@ -974,13 +919,12 @@ def save_support_message(
 
 
 # ==========================================================
-# All Support Messages
+# همه پیام‌های پشتیبانی
 # ==========================================================
 
 def all_support_messages():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -1004,20 +948,222 @@ def all_support_messages():
 
     return messages
     # ==========================================================
-# Statistics + Coupons
+# کد تخفیف
 # Part 4/4
 # ==========================================================
 
 
+def create_coupon(
+    code,
+    percent,
+    max_use
+):
+
+    db = get_db()
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        INSERT INTO coupons
+
+        (
+            code,
+            percent,
+            max_use
+        )
+
+        VALUES (?,?,?)
+
+        """,
+        (
+            code.upper(),
+            percent,
+            max_use
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
 
 # ==========================================================
-# Today Users Count
+# دریافت کد تخفیف
 # ==========================================================
+
+def get_coupon(
+    code
+):
+
+    db = get_db()
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM coupons
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    coupon = cursor.fetchone()
+
+
+    db.close()
+
+
+    return coupon
+
+
+
+
+# ==========================================================
+# بررسی اعتبار کد تخفیف
+# ==========================================================
+
+def check_coupon(
+    code
+):
+
+    coupon = get_coupon(code)
+
+
+    if not coupon:
+
+        return None
+
+
+
+    if coupon["used"] >= coupon["max_use"]:
+
+        return None
+
+
+
+    return coupon
+
+
+
+
+# ==========================================================
+# استفاده از کد تخفیف
+# ==========================================================
+
+def use_coupon(
+    code
+):
+
+    db = get_db()
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        UPDATE coupons
+
+        SET used = used + 1
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# لیست کدهای تخفیف
+# ==========================================================
+
+def all_coupons():
+
+    db = get_db()
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM coupons
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    coupons = cursor.fetchall()
+
+
+    db.close()
+
+
+    return coupons
+
+
+
+
+# ==========================================================
+# حذف کد تخفیف
+# ==========================================================
+
+def delete_coupon(
+    code
+):
+
+    db = get_db()
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        DELETE FROM coupons
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# آمار داشبورد
+# ==========================================================
+
 
 def today_users_count():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -1044,14 +1190,9 @@ def today_users_count():
 
 
 
-# ==========================================================
-# Sales Count
-# ==========================================================
-
 def sales_count():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -1078,14 +1219,9 @@ def sales_count():
 
 
 
-# ==========================================================
-# Total Income
-# ==========================================================
-
 def total_income():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -1112,14 +1248,9 @@ def total_income():
 
 
 
-# ==========================================================
-# Pending Payments Count
-# ==========================================================
-
 def pending_count():
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -1147,7 +1278,7 @@ def pending_count():
 
 
 # ==========================================================
-# Search Users
+# جستجوی کاربران
 # ==========================================================
 
 def search_users(
@@ -1155,7 +1286,6 @@ def search_users(
 ):
 
     db = get_db()
-
     cursor = db.cursor()
 
 
@@ -1191,247 +1321,27 @@ def search_users(
 
 
 # ==========================================================
-# Coupon System
-# ==========================================================
-
-
-def create_coupon(
-    code,
-    percent,
-    max_use
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        INSERT INTO coupons
-        (
-            code,
-            percent,
-            max_use
-        )
-
-        VALUES (?,?,?)
-
-        """,
-        (
-            code.upper(),
-            percent,
-            max_use
-        )
-    )
-
-
-    db.commit()
-
-    db.close()
-
-
-
-
-# ==========================================================
-# Get Coupon
-# ==========================================================
-
-def get_coupon(
-    code
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT *
-
-        FROM coupons
-
-        WHERE code=?
-
-        """,
-        (
-            code.upper(),
-        )
-    )
-
-
-    coupon = cursor.fetchone()
-
-
-    db.close()
-
-
-    return coupon
-
-
-
-
-# ==========================================================
-# Check Coupon
-# ==========================================================
-
-def check_coupon(
-    code
-):
-
-    coupon = get_coupon(
-        code
-    )
-
-
-    if not coupon:
-
-        return None
-
-
-
-    if coupon["used"] >= coupon["max_use"]:
-
-        return None
-
-
-
-    return coupon
-
-
-
-
-# ==========================================================
-# Use Coupon
-# ==========================================================
-
-def use_coupon(
-    code
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        UPDATE coupons
-
-        SET used = used + 1
-
-        WHERE code=?
-
-        """,
-        (
-            code.upper(),
-        )
-    )
-
-
-    db.commit()
-
-    db.close()
-
-
-
-
-# ==========================================================
-# All Coupons
-# ==========================================================
-
-def all_coupons():
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        SELECT *
-
-        FROM coupons
-
-        ORDER BY id DESC
-
-        """
-    )
-
-
-    coupons = cursor.fetchall()
-
-
-    db.close()
-
-
-    return coupons
-
-
-
-
-# ==========================================================
-# Delete Coupon
-# ==========================================================
-
-def delete_coupon(
-    code
-):
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-    cursor.execute(
-        """
-        DELETE FROM coupons
-
-        WHERE code=?
-
-        """,
-        (
-            code.upper(),
-        )
-    )
-
-
-    db.commit()
-
-    db.close()
-
-
-
-
-# ==========================================================
-# Dashboard Stats
+# آمار کامل
 # ==========================================================
 
 def get_stats():
 
     return {
 
-
         "users":
         users_count(),
-
 
         "today_users":
         today_users_count(),
 
-
         "sales":
         sales_count(),
-
 
         "subscriptions":
         services_count(),
 
-
         "income":
         total_income(),
-
 
         "pending":
         pending_count()
@@ -1442,7 +1352,7 @@ def get_stats():
 
 
 # ==========================================================
-# Database Test
+# تست دیتابیس
 # ==========================================================
 
 def test_database():
@@ -1457,9 +1367,7 @@ def test_database():
         return True
 
 
-
     except Exception as error:
-
 
         print(
             "DATABASE ERROR:",
