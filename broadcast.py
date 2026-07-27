@@ -83,8 +83,6 @@ async def send_broadcast(
 
 
 
-
-
     return {
 
         "success": success,
@@ -104,7 +102,7 @@ async def send_broadcast(
 
 
 # ==========================================================
-# Professional Message Template
+# Professional Broadcast Message
 # ==========================================================
 
 
@@ -246,7 +244,7 @@ def save_broadcast_history(
 
 
 # ==========================================================
-# Final Broadcast Function
+# Final Broadcast
 # ==========================================================
 
 
