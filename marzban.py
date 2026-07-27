@@ -1,6 +1,6 @@
 # =========================
 # marzban.py
-# Zeus Shop VPN
+# Zeus Shop VPN PRO
 # =========================
 
 import requests
@@ -15,9 +15,7 @@ from config import (
 )
 
 
-
 class Marzban:
-
 
     def __init__(self):
 
@@ -30,10 +28,13 @@ class Marzban:
         self.token = None
 
 
+        self.session = requests.Session()
 
-    # =====================
-    # ورود به مرزبان
-    # =====================
+
+
+    # =========================
+    # Login
+    # =========================
 
     def login(self):
 
@@ -51,7 +52,7 @@ class Marzban:
             }
 
 
-            response = requests.post(
+            response = self.session.post(
 
                 url,
 
@@ -64,8 +65,10 @@ class Marzban:
 
             if response.status_code == 200:
 
+                result = response.json()
 
-                self.token = response.json().get(
+
+                self.token = result.get(
                     "access_token"
                 )
 
@@ -73,7 +76,7 @@ class Marzban:
                 if self.token:
 
                     print(
-                        "✅ Marzban Login Success"
+                        "✅ Marzban Connected"
                     )
 
                     return True
@@ -81,7 +84,7 @@ class Marzban:
 
 
             print(
-                "❌ Marzban Login Failed:",
+                "❌ Marzban Login Failed",
                 response.text
             )
 
@@ -94,7 +97,7 @@ class Marzban:
 
 
             print(
-                "❌ Login Error:",
+                "❌ Marzban Login Error:",
                 e
             )
 
@@ -104,10 +107,9 @@ class Marzban:
 
 
 
-
-    # =====================
-    # هدر
-    # =====================
+    # =========================
+    # Headers
+    # =========================
 
     def headers(self):
 
@@ -125,37 +127,64 @@ class Marzban:
             "Authorization":
             f"Bearer {self.token}",
 
+
             "Content-Type":
             "application/json"
 
         }
-            # =====================
-    # تبدیل گیگ به بایت
-    # =====================
 
-    def gb_to_bytes(self, gb):
+
+
+
+    # =========================
+    # GB To Byte
+    # =========================
+
+    def gb_to_bytes(
+        self,
+        gb
+    ):
 
         return int(gb) * 1024 * 1024 * 1024
 
 
 
+    # =========================
+    # Random Username
+    # =========================
+
+    def random_username(self):
+
+        chars = (
+            string.ascii_lowercase
+            +
+            string.digits
+        )
 
 
-    # =====================
-    # ساخت کاربر مرزبان
-    # =====================
+        return (
+            "zeus_"
+            +
+            "".join(
+                random.choice(chars)
+                for _ in range(8)
+            )
+        )
+            # =========================
+    # Create User
+    # =========================
 
     def create_user(
         self,
         username=None,
-        data_limit=0
+        data_limit=0,
+        expire=0
     ):
-
 
         headers = self.headers()
 
 
-        if headers is None:
+        if not headers:
 
             return None
 
@@ -167,12 +196,7 @@ class Marzban:
 
 
 
-        url = f"{self.url}/api/user"
-
-
-
         payload = {
-
 
             "username": username,
 
@@ -191,7 +215,7 @@ class Marzban:
             },
 
 
-            "expire": 0,
+            "expire": expire,
 
 
             "data_limit": data_limit,
@@ -199,20 +223,17 @@ class Marzban:
 
             "data_limit_reset_strategy":
 
-                "no_reset"
-
+            "no_reset"
 
         }
 
 
 
-
         try:
 
+            response = self.session.post(
 
-            response = requests.post(
-
-                url,
+                f"{self.url}/api/user",
 
                 json=payload,
 
@@ -221,7 +242,6 @@ class Marzban:
                 timeout=20
 
             )
-
 
 
             print(
@@ -231,14 +251,7 @@ class Marzban:
 
 
 
-            if response.status_code in (
-
-                200,
-
-                201
-
-            ):
-
+            if response.status_code in [200, 201]:
 
                 return response.json()
 
@@ -248,16 +261,12 @@ class Marzban:
 
 
 
-
         except Exception as e:
 
 
             print(
-
                 "CREATE USER ERROR:",
-
                 e
-
             )
 
 
@@ -266,56 +275,19 @@ class Marzban:
 
 
 
-
-
-    # =====================
-    # ساخت نام کاربری
-    # =====================
-
-
-    def random_username(self):
-
-
-        chars = (
-
-            string.ascii_lowercase
-
-            +
-
-            string.digits
-
-        )
-
-
-        return (
-
-            "zeus_"
-
-            +
-
-            "".join(
-
-                random.choice(chars)
-
-                for _ in range(8)
-
-            )
-
-        )
-            # =====================
-    # دریافت اطلاعات کاربر
-    # =====================
+    # =========================
+    # Get User
+    # =========================
 
     def get_user(
         self,
         username
     ):
 
-
         headers = self.headers()
 
 
-        if headers is None:
+        if not headers:
 
             return None
 
@@ -323,8 +295,7 @@ class Marzban:
 
         try:
 
-
-            response = requests.get(
+            response = self.session.get(
 
                 f"{self.url}/api/user/{username}",
 
@@ -333,6 +304,7 @@ class Marzban:
                 timeout=20
 
             )
+
 
 
             if response.status_code == 200:
@@ -365,11 +337,9 @@ class Marzban:
 
 
 
-
-
-    # =====================
-    # لینک اشتراک
-    # =====================
+    # =========================
+    # Subscription Link
+    # =========================
 
     def subscription(
         self,
@@ -389,55 +359,44 @@ class Marzban:
 
 
 
-        subscription = user.get(
+        link = user.get(
             "subscription_url"
         )
 
 
 
-        if not subscription:
+        if not link:
 
             return None
 
 
 
-        if subscription.startswith(
+        if link.startswith(
             "http"
         ):
 
-            return subscription
+            return link
 
 
 
         return (
-
             self.url
-
             +
-
-            subscription
-
-        )
-
-
-
-
-
-
-    # =====================
-    # حذف کاربر
-    # =====================
+            link
+    )
+            # =========================
+    # Delete User
+    # =========================
 
     def delete_user(
         self,
         username
     ):
 
-
         headers = self.headers()
 
 
-        if headers is None:
+        if not headers:
 
             return False
 
@@ -445,131 +404,7 @@ class Marzban:
 
         try:
 
-
-            response = requests.delete(
-
-                f"{self.url}/api/user/{username}",
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-
-
-            return response.status_code == 200
-
-
-
-        except Exception as e:
-
-
-            print(
-                "DELETE ERROR:",
-                e
-            )
-
-
-            return False
-
-
-
-
-
-    # =====================
-    # تمدید حجم و زمان
-    # =====================
-
-    def update_user(
-        self,
-        username,
-        data_limit=None,
-        expire=None
-    ):
-
-
-        headers = self.headers()
-
-
-        if headers is None:
-
-            return False
-
-
-
-        payload = {}
-
-
-
-        if data_limit:
-
-            payload["data_limit"] = data_limit
-
-
-
-        if expire:
-
-            payload["expire"] = expire
-
-
-
-
-
-        try:
-
-
-            response = requests.put(
-
-                f"{self.url}/api/user/{username}",
-
-                json=payload,
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-
-
-            return response.status_code == 200
-
-
-
-        except Exception as e:
-
-
-            print(
-                "UPDATE ERROR:",
-                e
-            )
-
-
-            return False
-        # =====================
-    # دریافت اطلاعات کاربر
-    # =====================
-
-    def get_user(
-        self,
-        username
-    ):
-
-
-        headers = self.headers()
-
-
-        if headers is None:
-
-            return None
-
-
-
-        try:
-
-
-            response = requests.get(
+            response = self.session.delete(
 
                 f"{self.url}/api/user/{username}",
 
@@ -582,136 +417,25 @@ class Marzban:
 
             if response.status_code == 200:
 
-                return response.json()
+                return True
 
 
 
             print(
-                "GET USER ERROR:",
+                "DELETE USER ERROR:",
                 response.text
             )
 
 
-            return None
-
-
-
-        except Exception as e:
-
-
-            print(
-                "GET USER EXCEPTION:",
-                e
-            )
-
-
-            return None
-
-
-
-
-
-
-    # =====================
-    # لینک اشتراک
-    # =====================
-
-    def subscription(
-        self,
-        username
-    ):
-
-
-        user = self.get_user(
-            username
-        )
-
-
-
-        if not user:
-
-            return None
-
-
-
-        subscription = user.get(
-            "subscription_url"
-        )
-
-
-
-        if not subscription:
-
-            return None
-
-
-
-        if subscription.startswith(
-            "http"
-        ):
-
-            return subscription
-
-
-
-        return (
-
-            self.url
-
-            +
-
-            subscription
-
-        )
-
-
-
-
-
-
-    # =====================
-    # حذف کاربر
-    # =====================
-
-    def delete_user(
-        self,
-        username
-    ):
-
-
-        headers = self.headers()
-
-
-        if headers is None:
-
             return False
 
 
 
-        try:
-
-
-            response = requests.delete(
-
-                f"{self.url}/api/user/{username}",
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-
-
-            return response.status_code == 200
-
-
-
         except Exception as e:
 
 
             print(
-                "DELETE ERROR:",
+                "DELETE USER EXCEPTION:",
                 e
             )
 
@@ -721,10 +445,10 @@ class Marzban:
 
 
 
-
-    # =====================
+    # =========================
+    # Update User
     # تمدید حجم و زمان
-    # =====================
+    # =========================
 
     def update_user(
         self,
@@ -737,7 +461,7 @@ class Marzban:
         headers = self.headers()
 
 
-        if headers is None:
+        if not headers:
 
             return False
 
@@ -747,24 +471,27 @@ class Marzban:
 
 
 
-        if data_limit:
+        if data_limit is not None:
 
             payload["data_limit"] = data_limit
 
 
 
-        if expire:
+        if expire is not None:
 
             payload["expire"] = expire
 
 
 
+        if not payload:
+
+            return False
+
 
 
         try:
 
-
-            response = requests.put(
+            response = self.session.put(
 
                 f"{self.url}/api/user/{username}",
 
@@ -778,7 +505,19 @@ class Marzban:
 
 
 
-            return response.status_code == 200
+            if response.status_code == 200:
+
+                return True
+
+
+
+            print(
+                "UPDATE USER ERROR:",
+                response.text
+            )
+
+
+            return False
 
 
 
@@ -786,9 +525,26 @@ class Marzban:
 
 
             print(
-                "UPDATE ERROR:",
+                "UPDATE USER EXCEPTION:",
                 e
             )
 
 
             return False
+
+
+
+
+    # =========================
+    # Test Connection
+    # =========================
+
+    def test_connection(self):
+
+
+        if self.login():
+
+            return True
+
+
+        return False
