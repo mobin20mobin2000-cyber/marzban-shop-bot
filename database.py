@@ -15,18 +15,28 @@ DB_NAME = "zeus.db"
 
 
 
+
+# ==========================================================
+# Database Connection
+# ==========================================================
+
+
 def get_db():
 
-    return sqlite3.connect(
+    db = sqlite3.connect(
         DB_NAME
     )
+
+    db.row_factory = sqlite3.Row
+
+    return db
 
 
 
 
 
 # ==========================================================
-# Create Tables
+# Initialize Database
 # ==========================================================
 
 
@@ -41,7 +51,7 @@ def init_db():
 
     cursor.execute("""
 
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE IF NOT EXISTS users(
 
         id INTEGER PRIMARY KEY,
 
@@ -58,7 +68,7 @@ def init_db():
 
     cursor.execute("""
 
-    CREATE TABLE IF NOT EXISTS orders (
+    CREATE TABLE IF NOT EXISTS orders(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -70,7 +80,9 @@ def init_db():
 
         price INTEGER,
 
-        status TEXT DEFAULT 'pending',
+        status TEXT,
+
+        discount TEXT,
 
         created TEXT
 
@@ -83,7 +95,30 @@ def init_db():
 
     cursor.execute("""
 
-    CREATE TABLE IF NOT EXISTS services (
+    CREATE TABLE IF NOT EXISTS receipts(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        user_id INTEGER,
+
+        order_id INTEGER,
+
+        file_id TEXT,
+
+        status TEXT,
+
+        created TEXT
+
+    )
+
+    """)
+
+
+
+
+    cursor.execute("""
+
+    CREATE TABLE IF NOT EXISTS services(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -97,24 +132,7 @@ def init_db():
 
         days INTEGER,
 
-        created TEXT
-
-    )
-
-    """)
-
-
-
-
-    cursor.execute("""
-
-    CREATE TABLE IF NOT EXISTS receipts (
-
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-        user_id INTEGER,
-
-        file_id TEXT,
+        status TEXT,
 
         created TEXT
 
@@ -127,7 +145,7 @@ def init_db():
 
     cursor.execute("""
 
-    CREATE TABLE IF NOT EXISTS discounts (
+    CREATE TABLE IF NOT EXISTS discounts(
 
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -135,7 +153,7 @@ def init_db():
 
         percent INTEGER,
 
-        active INTEGER DEFAULT 1
+        active INTEGER
 
     )
 
@@ -176,15 +194,23 @@ def add_user(
     cursor.execute(
 
         """
+
         INSERT OR IGNORE INTO users
+
         (
+
             id,
+
             username,
+
             created
+
         )
 
         VALUES
+
         (?,?,?)
+
         """,
 
         (
@@ -198,6 +224,7 @@ def add_user(
         )
 
     )
+
 
 
     db.commit()
@@ -223,7 +250,9 @@ def create_order(
 
     days,
 
-    price
+    price,
+
+    discount=""
 
 ):
 
@@ -252,14 +281,15 @@ def create_order(
 
             status,
 
+            discount,
+
             created
 
         )
 
-
         VALUES
 
-        (?,?,?,?,?,?)
+        (?,?,?,?,?,?,?)
 
         """,
 
@@ -274,6 +304,8 @@ def create_order(
             price,
 
             "pending",
+
+            discount,
 
             datetime.now().isoformat()
 
@@ -302,7 +334,7 @@ def create_order(
 
 
 # ==========================================================
-# Last Order
+# Last User Order
 # ==========================================================
 
 
@@ -314,8 +346,6 @@ def last_order(
 
 
     db = get_db()
-
-    db.row_factory = sqlite3.Row
 
     cursor = db.cursor()
 
@@ -346,6 +376,7 @@ def last_order(
     )
 
 
+
     order = cursor.fetchone()
 
 
@@ -363,15 +394,13 @@ def last_order(
 
 
 # ==========================================================
-# Update Order Status
+# Get Order
 # ==========================================================
 
 
-def update_order_status(
+def get_order(
 
-    order_id,
-
-    status
+    order_id
 
 ):
 
@@ -386,9 +415,9 @@ def update_order_status(
 
         """
 
-        UPDATE orders
+        SELECT *
 
-        SET status=?
+        FROM orders
 
         WHERE id=?
 
@@ -396,19 +425,37 @@ def update_order_status(
 
         (
 
-            status,
-
-            order_id
+            order_id,
 
         )
 
     )
 
 
-    db.commit()
+
+    order = cursor.fetchone()
+
+
 
     db.close()
-    # ==========================================================
+
+
+
+    return order
+
+
+
+
+
+
+
+# ==========================================================
+# Update Order
+# ==========================================================
+
+
+def update_order
+# ==========================================================
 # Receipts & Services
 # Part 3/4
 # ==========================================================
@@ -423,6 +470,8 @@ def update_order_status(
 def save_receipt(
 
     user_id,
+
+    order_id,
 
     file_id
 
@@ -445,7 +494,11 @@ def save_receipt(
 
             user_id,
 
+            order_id,
+
             file_id,
+
+            status,
 
             created
 
@@ -453,7 +506,7 @@ def save_receipt(
 
         VALUES
 
-        (?,?,?)
+        (?,?,?,?,?)
 
         """,
 
@@ -461,9 +514,67 @@ def save_receipt(
 
             user_id,
 
+            order_id,
+
             file_id,
 
+            "pending",
+
             datetime.now().isoformat()
+
+        )
+
+    )
+
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+
+
+
+# ==========================================================
+# Update Receipt Status
+# ==========================================================
+
+
+def update_receipt_status(
+
+    order_id,
+
+    status
+
+):
+
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+
+    cursor.execute(
+
+        """
+
+        UPDATE receipts
+
+        SET status=?
+
+        WHERE order_id=?
+
+        """,
+
+        (
+
+            status,
+
+            order_id
 
         )
 
@@ -525,14 +636,15 @@ def save_service(
 
             days,
 
+            status,
+
             created
 
         )
 
-
         VALUES
 
-        (?,?,?,?,?,?)
+        (?,?,?,?,?,?,?)
 
         """,
 
@@ -547,6 +659,8 @@ def save_service(
             volume,
 
             days,
+
+            "active",
 
             datetime.now().isoformat()
 
@@ -580,104 +694,16 @@ def get_user_service(
 
     db = get_db()
 
-    db.row_factory = sqlite3.Row
-
-    cursor = db.cursor()
-
-
-
-    cursor.execute(
-
-        """
-
-        SELECT *
-
-        FROM services
-
-        WHERE user_id=?
-
-        ORDER BY id DESC
-
-        LIMIT 1
-
-        """,
-
-        (
-
-            user_id,
-
-        )
-
-    )
-
-
-
-    service = cursor.fetchone()
-
-
-
-    db.close()
-
-
-
-    return service
-
-
-
-
-
-
-
-# ==========================================================
-# Get All Services
-# ==========================================================
-
-
-def get_services():
-
-
-    db = get_db()
-
-    db.row_factory = sqlite3.Row
-
-    cursor = db.cursor()
-
-
-
-    cursor.execute(
-
-        """
-
-        SELECT *
-
-        FROM services
-
-        ORDER BY id DESC
-
-        """
-
-    )
-
-
-
-    services = cursor.fetchall()
-
-
-
-    db.close()
-
-
-
-    return services
+    cursor =
     # ==========================================================
-# Discounts & Statistics
+# Discount + Admin + Test
 # Part 4/4
 # ==========================================================
 
 
 
 # ==========================================================
-# Add Discount Code
+# Add Discount
 # ==========================================================
 
 
@@ -743,7 +769,7 @@ def add_discount(
 
 
 # ==========================================================
-# Check Discount
+# Get Discount
 # ==========================================================
 
 
@@ -755,8 +781,6 @@ def get_discount(
 
 
     db = get_db()
-
-    db.row_factory = sqlite3.Row
 
     cursor = db.cursor()
 
@@ -839,6 +863,7 @@ def disable_discount(
         )
 
     )
+
 
 
     db.commit()
@@ -962,8 +987,10 @@ def get_stats():
 
 
 
+
+
 # ==========================================================
-# Get Pending Orders
+# Pending Orders
 # ==========================================================
 
 
@@ -971,8 +998,6 @@ def get_pending_orders():
 
 
     db = get_db()
-
-    db.row_factory = sqlite3.Row
 
     cursor = db.cursor()
 
@@ -1005,6 +1030,13 @@ def get_pending_orders():
 
 
     return orders
+
+
+
+
+
+
+
 # ==========================================================
 # Database Test
 # ==========================================================
@@ -1012,28 +1044,41 @@ def get_pending_orders():
 
 def test_database():
 
+
     try:
+
 
         db = get_db()
 
         cursor = db.cursor()
 
+
         cursor.execute(
+
             "SELECT 1"
+
         )
 
+
         result = cursor.fetchone()
+
 
         db.close()
 
 
+
         if result:
 
+
             print(
+
                 "✅ Database Connected"
+
             )
 
+
             return True
+
 
 
         return False
@@ -1043,9 +1088,13 @@ def test_database():
     except Exception as error:
 
 
+
         print(
+
             "❌ Database Error:",
+
             error
+
         )
 
 
