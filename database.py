@@ -10,8 +10,9 @@ import sqlite3
 DATABASE = "zeus.db"
 
 
+
 # ==========================================================
-# Database Connection
+# Connection
 # ==========================================================
 
 def get_db():
@@ -37,6 +38,8 @@ def init_db():
     cursor = db.cursor()
 
 
+    # Users
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
 
@@ -51,6 +54,9 @@ def init_db():
     )
     """)
 
+
+
+    # Orders
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS orders(
@@ -77,6 +83,9 @@ def init_db():
     """)
 
 
+
+    # Subscriptions
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS subscriptions(
 
@@ -102,6 +111,9 @@ def init_db():
     """)
 
 
+
+    # Receipts
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS receipts(
 
@@ -118,6 +130,9 @@ def init_db():
     )
     """)
 
+
+
+    # Coupons
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS coupons(
@@ -136,6 +151,9 @@ def init_db():
     """)
 
 
+
+    # Support
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS support(
 
@@ -151,9 +169,12 @@ def init_db():
     """)
 
 
+
     db.commit()
 
     db.close()
+
+
 
 
 
@@ -196,6 +217,8 @@ def add_user(
 
 
 
+
+
 def get_user(
     telegram_id
 ):
@@ -215,16 +238,20 @@ def get_user(
 
         """,
         (
-            telegram_id
+            telegram_id,
         )
     )
 
 
     user = cursor.fetchone()
 
+
     db.close()
 
+
     return user
+
+
 
 
 
@@ -249,9 +276,13 @@ def all_users():
 
     users = cursor.fetchall()
 
+
     db.close()
 
+
     return users
+
+
 
 
 
@@ -267,13 +298,16 @@ def users_count():
         SELECT COUNT(*)
 
         FROM users
+
         """
     )
 
 
     count = cursor.fetchone()[0]
 
+
     db.close()
+
 
     return count
     # ==========================================================
@@ -281,6 +315,11 @@ def users_count():
 # Part 2/4
 # ==========================================================
 
+
+
+# ==========================================================
+# Create Order
+# ==========================================================
 
 def create_order(
     telegram_id,
@@ -341,7 +380,6 @@ def create_order(
 # Get Order By ID
 # ==========================================================
 
-
 def get_order_by_id(
     order_id
 ):
@@ -361,7 +399,7 @@ def get_order_by_id(
 
         """,
         (
-            order_id
+            order_id,
         )
     )
 
@@ -379,9 +417,8 @@ def get_order_by_id(
 
 
 # ==========================================================
-# Last User Order
+# Last Order User
 # ==========================================================
-
 
 def last_order(
     telegram_id
@@ -406,7 +443,7 @@ def last_order(
 
         """,
         (
-            telegram_id
+            telegram_id,
         )
     )
 
@@ -426,7 +463,6 @@ def last_order(
 # ==========================================================
 # Update Order Status
 # ==========================================================
-
 
 def update_order_status(
     order_id,
@@ -466,7 +502,6 @@ def update_order_status(
 # Approve Payment
 # ==========================================================
 
-
 def approve_payment(
     order_id
 ):
@@ -484,7 +519,6 @@ def approve_payment(
 # Reject Payment
 # ==========================================================
 
-
 def reject_payment(
     order_id
 ):
@@ -501,7 +535,6 @@ def reject_payment(
 # ==========================================================
 # Pending Orders
 # ==========================================================
-
 
 def pending_orders():
 
@@ -540,7 +573,6 @@ def pending_orders():
 # Approved Orders
 # ==========================================================
 
-
 def approved_orders():
 
     db = get_db()
@@ -578,7 +610,6 @@ def approved_orders():
 # Delete Order
 # ==========================================================
 
-
 def delete_order(
     order_id
 ):
@@ -596,7 +627,7 @@ def delete_order(
 
         """,
         (
-            order_id
+            order_id,
         )
     )
 
@@ -610,10 +641,10 @@ def delete_order(
 # ==========================================================
 
 
+
 # ==========================================================
 # Save Service
 # ==========================================================
-
 
 def save_service(
     telegram_id,
@@ -670,7 +701,6 @@ def save_service(
 # Get User Service
 # ==========================================================
 
-
 def get_user_service(
     telegram_id
 ):
@@ -694,7 +724,7 @@ def get_user_service(
 
         """,
         (
-            telegram_id
+            telegram_id,
         )
     )
 
@@ -714,7 +744,6 @@ def get_user_service(
 # ==========================================================
 # All Services
 # ==========================================================
-
 
 def all_services():
 
@@ -751,7 +780,6 @@ def all_services():
 # Services Count
 # ==========================================================
 
-
 def services_count():
 
     db = get_db()
@@ -782,9 +810,8 @@ def services_count():
 
 
 # ==========================================================
-# Receipts
+# Save Receipt
 # ==========================================================
-
 
 def save_receipt(
     telegram_id,
@@ -822,6 +849,10 @@ def save_receipt(
 
 
 
+# ==========================================================
+# Pending Receipts
+# ==========================================================
+
 def pending_receipts():
 
     db = get_db()
@@ -854,6 +885,10 @@ def pending_receipts():
 
 
 
+
+# ==========================================================
+# Update Receipt Status
+# ==========================================================
 
 def update_receipt_status(
     telegram_id,
@@ -890,9 +925,8 @@ def update_receipt_status(
 
 
 # ==========================================================
-# Support
+# Support Message
 # ==========================================================
-
 
 def save_support_message(
     telegram_id,
@@ -957,9 +991,10 @@ def all_support_messages():
 
     return messages
     # ==========================================================
-# Coupons + Statistics
+# Coupons + Statistics + Test
 # Part 4/4
 # ==========================================================
+
 
 
 # ==========================================================
@@ -1025,7 +1060,7 @@ def get_coupon(
 
         """,
         (
-            code.upper()
+            code.upper(),
         )
     )
 
@@ -1046,7 +1081,9 @@ def check_coupon(
     code
 ):
 
-    coupon = get_coupon(code)
+    coupon = get_coupon(
+        code
+    )
 
 
     if not coupon:
@@ -1084,7 +1121,7 @@ def use_coupon(
 
         """,
         (
-            code.upper()
+            code.upper(),
         )
     )
 
@@ -1145,7 +1182,7 @@ def delete_coupon(
 
         """,
         (
-            code.upper()
+            code.upper(),
         )
     )
 
@@ -1368,6 +1405,7 @@ def test_database():
         db = get_db()
 
         db.close()
+
 
         return True
 
