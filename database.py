@@ -1005,3 +1005,48 @@ def get_pending_orders():
 
 
     return orders
+# ==========================================================
+# Database Test
+# ==========================================================
+
+
+def test_database():
+
+    try:
+
+        db = get_db()
+
+        cursor = db.cursor()
+
+        cursor.execute(
+            "SELECT 1"
+        )
+
+        result = cursor.fetchone()
+
+        db.close()
+
+
+        if result:
+
+            print(
+                "✅ Database Connected"
+            )
+
+            return True
+
+
+        return False
+
+
+
+    except Exception as error:
+
+
+        print(
+            "❌ Database Error:",
+            error
+        )
+
+
+        return False
