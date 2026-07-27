@@ -1,7 +1,8 @@
-# =========================
-# marzban.py
+# ==========================================================
 # Zeus Shop VPN PRO
-# =========================
+# marzban.py
+# Part 1/4
+# ==========================================================
 
 import requests
 import random
@@ -15,7 +16,9 @@ from config import (
 )
 
 
+
 class Marzban:
+
 
     def __init__(self):
 
@@ -28,13 +31,10 @@ class Marzban:
         self.token = None
 
 
-        self.session = requests.Session()
 
-
-
-    # =========================
-    # Login
-    # =========================
+    # ======================================================
+    # ورود به پنل Marzban
+    # ======================================================
 
     def login(self):
 
@@ -52,39 +52,38 @@ class Marzban:
             }
 
 
-            response = self.session.post(
-
+            response = requests.post(
                 url,
-
                 data=data,
-
                 timeout=20
-
             )
+
 
 
             if response.status_code == 200:
 
-                result = response.json()
 
-
-                self.token = result.get(
+                self.token = response.json().get(
                     "access_token"
                 )
 
 
+
                 if self.token:
 
+
                     print(
-                        "✅ Marzban Connected"
+                        "✅ Marzban Login Success"
                     )
+
 
                     return True
 
 
 
+
             print(
-                "❌ Marzban Login Failed",
+                "❌ Marzban Login Failed:",
                 response.text
             )
 
@@ -93,12 +92,13 @@ class Marzban:
 
 
 
-        except Exception as e:
+
+        except Exception as error:
 
 
             print(
                 "❌ Marzban Login Error:",
-                e
+                error
             )
 
 
@@ -107,14 +107,16 @@ class Marzban:
 
 
 
-    # =========================
-    # Headers
-    # =========================
+
+    # ======================================================
+    # ساخت Header
+    # ======================================================
 
     def headers(self):
 
 
         if not self.token:
+
 
             if not self.login():
 
@@ -122,13 +124,18 @@ class Marzban:
 
 
 
+
         return {
 
+
             "Authorization":
+
             f"Bearer {self.token}",
 
 
+
             "Content-Type":
+
             "application/json"
 
         }
@@ -136,9 +143,10 @@ class Marzban:
 
 
 
-    # =========================
-    # GB To Byte
-    # =========================
+
+    # ======================================================
+    # تبدیل گیگابایت به بایت
+    # ======================================================
 
     def gb_to_bytes(
         self,
@@ -149,30 +157,49 @@ class Marzban:
 
 
 
-    # =========================
-    # Random Username
-    # =========================
+
+
+    # ======================================================
+    # ساخت نام کاربری تصادفی
+    # ======================================================
 
     def random_username(self):
 
+
         chars = (
+
             string.ascii_lowercase
+
             +
+
             string.digits
+
+        )
+
+
+        random_text = "".join(
+
+            random.choice(chars)
+
+            for _ in range(8)
+
         )
 
 
         return (
             "zeus_"
             +
-            "".join(
-                random.choice(chars)
-                for _ in range(8)
-            )
+            random_text
         )
-            # =========================
-    # Create User
-    # =========================
+        # ==========================================================
+# ساخت و مدیریت کاربر Marzban
+# Part 2/4
+# ==========================================================
+
+
+    # ======================================================
+    # ساخت کاربر جدید
+    # ======================================================
 
     def create_user(
         self,
@@ -181,12 +208,14 @@ class Marzban:
         expire=0
     ):
 
+
         headers = self.headers()
 
 
-        if not headers:
+        if headers is None:
 
             return None
+
 
 
 
@@ -196,29 +225,46 @@ class Marzban:
 
 
 
+
         payload = {
 
-            "username": username,
+
+            "username":
+
+            username,
 
 
-            "proxies": {
+
+            "proxies":
+
+            {
 
                 "vless": {}
 
             },
 
 
-            "inbounds": {
+
+            "inbounds":
+
+            {
 
                 "vless": []
 
             },
 
 
-            "expire": expire,
+
+            "expire":
+
+            expire,
 
 
-            "data_limit": data_limit,
+
+            "data_limit":
+
+            data_limit,
+
 
 
             "data_limit_reset_strategy":
@@ -229,9 +275,12 @@ class Marzban:
 
 
 
+
+
         try:
 
-            response = self.session.post(
+
+            response = requests.post(
 
                 f"{self.url}/api/user",
 
@@ -244,6 +293,8 @@ class Marzban:
             )
 
 
+
+
             print(
                 "CREATE USER:",
                 response.text
@@ -251,9 +302,18 @@ class Marzban:
 
 
 
-            if response.status_code in [200, 201]:
+
+            if response.status_code in (
+
+                200,
+
+                201
+
+            ):
+
 
                 return response.json()
+
 
 
 
@@ -261,12 +321,16 @@ class Marzban:
 
 
 
-        except Exception as e:
+
+        except Exception as error:
 
 
             print(
+
                 "CREATE USER ERROR:",
-                e
+
+                error
+
             )
 
 
@@ -275,27 +339,32 @@ class Marzban:
 
 
 
-    # =========================
-    # Get User
-    # =========================
+
+
+    # ======================================================
+    # دریافت اطلاعات کاربر
+    # ======================================================
 
     def get_user(
         self,
         username
     ):
 
+
         headers = self.headers()
 
 
-        if not headers:
+        if headers is None:
 
             return None
 
 
 
+
         try:
 
-            response = self.session.get(
+
+            response = requests.get(
 
                 f"{self.url}/api/user/{username}",
 
@@ -307,15 +376,21 @@ class Marzban:
 
 
 
+
             if response.status_code == 200:
+
 
                 return response.json()
 
 
 
+
             print(
+
                 "GET USER ERROR:",
+
                 response.text
+
             )
 
 
@@ -323,12 +398,16 @@ class Marzban:
 
 
 
-        except Exception as e:
+
+        except Exception as error:
 
 
             print(
-                "GET USER EXCEPTION:",
-                e
+
+                "GET USER ERROR:",
+
+                error
+
             )
 
 
@@ -337,9 +416,11 @@ class Marzban:
 
 
 
-    # =========================
-    # Subscription Link
-    # =========================
+
+
+    # ======================================================
+    # دریافت لینک اشتراک
+    # ======================================================
 
     def subscription(
         self,
@@ -359,6 +440,7 @@ class Marzban:
 
 
 
+
         link = user.get(
             "subscription_url"
         )
@@ -371,6 +453,7 @@ class Marzban:
 
 
 
+
         if link.startswith(
             "http"
         ):
@@ -379,32 +462,46 @@ class Marzban:
 
 
 
+
         return (
+
             self.url
+
             +
+
             link
-    )
-            # =========================
-    # Delete User
-    # =========================
+
+        )
+        # ==========================================================
+# عملیات کاربر Marzban
+# Part 3/4
+# ==========================================================
+
+
+    # ======================================================
+    # حذف کاربر
+    # ======================================================
 
     def delete_user(
         self,
         username
     ):
 
+
         headers = self.headers()
 
 
-        if not headers:
+        if headers is None:
 
             return False
 
 
 
+
         try:
 
-            response = self.session.delete(
+
+            response = requests.delete(
 
                 f"{self.url}/api/user/{username}",
 
@@ -415,15 +512,27 @@ class Marzban:
             )
 
 
-            if response.status_code == 200:
+
+
+            if response.status_code in (
+
+                200,
+
+                204
+
+            ):
 
                 return True
 
 
 
+
             print(
+
                 "DELETE USER ERROR:",
+
                 response.text
+
             )
 
 
@@ -431,12 +540,16 @@ class Marzban:
 
 
 
-        except Exception as e:
+
+        except Exception as error:
 
 
             print(
-                "DELETE USER EXCEPTION:",
-                e
+
+                "DELETE ERROR:",
+
+                error
+
             )
 
 
@@ -445,10 +558,11 @@ class Marzban:
 
 
 
-    # =========================
-    # Update User
-    # تمدید حجم و زمان
-    # =========================
+
+
+    # ======================================================
+    # بروزرسانی کاربر
+    # ======================================================
 
     def update_user(
         self,
@@ -461,13 +575,15 @@ class Marzban:
         headers = self.headers()
 
 
-        if not headers:
+        if headers is None:
 
             return False
 
 
 
+
         payload = {}
+
 
 
 
@@ -477,9 +593,12 @@ class Marzban:
 
 
 
+
         if expire is not None:
 
             payload["expire"] = expire
+
+
 
 
 
@@ -489,9 +608,13 @@ class Marzban:
 
 
 
+
+
+
         try:
 
-            response = self.session.put(
+
+            response = requests.put(
 
                 f"{self.url}/api/user/{username}",
 
@@ -505,15 +628,20 @@ class Marzban:
 
 
 
+
             if response.status_code == 200:
 
                 return True
 
 
 
+
             print(
+
                 "UPDATE USER ERROR:",
+
                 response.text
+
             )
 
 
@@ -521,12 +649,16 @@ class Marzban:
 
 
 
-        except Exception as e:
+
+        except Exception as error:
 
 
             print(
-                "UPDATE USER EXCEPTION:",
-                e
+
+                "UPDATE ERROR:",
+
+                error
+
             )
 
 
@@ -535,9 +667,115 @@ class Marzban:
 
 
 
-    # =========================
-    # Test Connection
-    # =========================
+
+
+    # ======================================================
+    # بررسی وجود کاربر
+    # ======================================================
+
+    def user_exists(
+        self,
+        username
+    ):
+
+
+        user = self.get_user(
+            username
+        )
+
+
+        if user:
+
+            return True
+
+
+
+        return False
+
+
+
+
+
+
+    # ======================================================
+    # دریافت لیست کاربران
+    # ======================================================
+
+    def get_users(
+        self
+    ):
+
+
+        headers = self.headers()
+
+
+        if headers is None:
+
+            return []
+
+
+
+
+        try:
+
+
+            response = requests.get(
+
+                f"{self.url}/api/users",
+
+                headers=headers,
+
+                timeout=20
+
+            )
+
+
+
+
+            if response.status_code == 200:
+
+
+                data = response.json()
+
+
+                return data.get(
+
+                    "users",
+
+                    []
+
+                )
+
+
+
+
+            return []
+
+
+
+
+        except Exception as error:
+
+
+            print(
+
+                "GET USERS ERROR:",
+
+                error
+
+            )
+
+
+            return []
+            # ==========================================================
+# ابزارهای تکمیلی Marzban
+# Part 4/4
+# ==========================================================
+
+
+    # ======================================================
+    # وضعیت اتصال پنل
+    # ======================================================
 
     def test_connection(self):
 
@@ -548,3 +786,154 @@ class Marzban:
 
 
         return False
+
+
+
+
+
+    # ======================================================
+    # اطلاعات پنل
+    # ======================================================
+
+    def panel_info(self):
+
+
+        return {
+
+
+            "url":
+
+            self.url,
+
+
+            "username":
+
+            self.username,
+
+
+            "status":
+
+            "connected"
+
+            if self.token
+
+            else
+
+            "offline"
+
+        }
+
+
+
+
+
+
+    # ======================================================
+    # ساخت سرویس کامل
+    # ======================================================
+
+    def create_service(
+        self,
+        volume,
+        days
+    ):
+
+
+        data_limit = self.gb_to_bytes(
+            volume
+        )
+
+
+
+        expire = (
+
+            int(days)
+
+            *
+
+            24
+
+            *
+
+            60
+
+            *
+
+            60
+
+        )
+
+
+
+        user = self.create_user(
+
+            data_limit=data_limit,
+
+            expire=expire
+
+        )
+
+
+
+        if not user:
+
+            return None
+
+
+
+
+        username = user.get(
+            "username"
+        )
+
+
+
+        if not username:
+
+            return None
+
+
+
+
+        subscription = self.subscription(
+
+            username
+
+        )
+
+
+
+        return {
+
+
+            "username":
+
+            username,
+
+
+
+            "subscription":
+
+            subscription,
+
+
+
+            "volume":
+
+            volume,
+
+
+
+            "days":
+
+            days
+
+        }
+
+
+
+
+
+    # ======================================================
+    # پایان
+    # ======================================================
