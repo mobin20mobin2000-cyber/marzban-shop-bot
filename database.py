@@ -1,7 +1,7 @@
 # ==========================================================
 # Zeus Shop VPN PRO
 # database.py
-# Part 1/5
+# Part 1/8
 # ==========================================================
 
 
@@ -9,7 +9,10 @@ import sqlite3
 from datetime import datetime
 
 
+
 DB_NAME = "zeus.db"
+
+
 
 
 
@@ -18,94 +21,196 @@ DB_NAME = "zeus.db"
 # ==========================================================
 
 
-def get_db():
+def get_connection():
 
-    return sqlite3.connect(DB_NAME)
+    return sqlite3.connect(
+
+        DB_NAME
+
+    )
+
+
+
+
 
 
 
 
 
 # ==========================================================
-# Init Database
+# Initialize Database
 # ==========================================================
 
 
 def init_db():
 
-    db = get_db()
 
-    cursor = db.cursor()
+    conn = get_connection()
 
+    cursor = conn.cursor()
+
+
+
+
+
+    # =========================
+    # Users Table
+    # =========================
 
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users
-    (
-        id INTEGER PRIMARY KEY,
+
+    CREATE TABLE IF NOT EXISTS users (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        user_id INTEGER UNIQUE,
+
         username TEXT,
-        created TEXT
+
+        created_at TEXT
+
     )
+
     """)
 
 
 
+
+
+
+
+    # =========================
+    # Orders Table
+    # =========================
+
+
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS orders
-    (
+
+    CREATE TABLE IF NOT EXISTS orders (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         user_id INTEGER,
+
         volume TEXT,
+
         days INTEGER,
+
         price INTEGER,
-        status TEXT,
-        created TEXT
+
+        status TEXT DEFAULT 'pending',
+
+        created_at TEXT
+
     )
+
     """)
 
 
 
+
+
+
+
+    # =========================
+    # Receipts Table
+    # =========================
+
+
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS receipts
-    (
+
+    CREATE TABLE IF NOT EXISTS receipts (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         user_id INTEGER,
-        order_id INTEGER,
+
         file_id TEXT,
-        created TEXT
+
+        created_at TEXT
+
     )
+
     """)
 
+
+
+
+
+
+
+    # =========================
+    # Services Table
+    # =========================
 
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS services
-    (
+
+    CREATE TABLE IF NOT EXISTS services (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         user_id INTEGER,
+
         username TEXT,
+
         subscription_url TEXT,
+
         volume TEXT,
+
         days INTEGER,
-        created TEXT
+
+        created_at TEXT
+
     )
+
     """)
 
 
 
-    db.commit()
-
-    db.close()
 
 
 
-    print(
-        "✅ Database Ready"
+
+    # =========================
+    # Broadcast Table
+    # =========================
+
+
+    cursor.execute("""
+
+    CREATE TABLE IF NOT EXISTS broadcasts (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        message TEXT,
+
+        success INTEGER,
+
+        failed INTEGER,
+
+        created_at TEXT
+
     )
+
+    """)
+
+
+
+
+
+
+
+    conn.commit()
+
+    conn.close()
     # ==========================================================
-# Users
-# Part 2/5
+# Users Management
+# Part 2/8
 # ==========================================================
+
+
 
 
 
@@ -123,9 +228,11 @@ def add_user(
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    cursor = db.cursor()
+    cursor = conn.cursor()
+
+
 
 
 
@@ -134,13 +241,12 @@ def add_user(
         """
         INSERT OR IGNORE INTO users
         (
-            id,
+            user_id,
             username,
-            created
+            created_at
         )
 
-        VALUES
-        (?,?,?)
+        VALUES (?, ?, ?)
 
         """,
 
@@ -150,7 +256,11 @@ def add_user(
 
             username,
 
-            datetime.now().isoformat()
+            datetime.now().strftime(
+
+                "%Y-%m-%d %H:%M:%S"
+
+            )
 
         )
 
@@ -158,9 +268,11 @@ def add_user(
 
 
 
-    db.commit()
 
-    db.close()
+
+    conn.commit()
+
+    conn.close()
 
 
 
@@ -169,7 +281,7 @@ def add_user(
 
 
 # ==========================================================
-# Get User
+# Get User By ID
 # ==========================================================
 
 
@@ -180,12 +292,11 @@ def get_user(
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    db.row_factory = sqlite3.Row
+    cursor = conn.cursor()
 
 
-    cursor = db.cursor()
 
 
 
@@ -196,7 +307,7 @@ def get_user(
 
         FROM users
 
-        WHERE id=?
+        WHERE user_id = ?
 
         """,
 
@@ -210,19 +321,165 @@ def get_user(
 
 
 
+
+
     user = cursor.fetchone()
 
 
-
-    db.close()
-
+    conn.close()
 
 
-    return user
-    # ==========================================================
-# Orders
-# Part 3/5
+
+
+
+    if user:
+
+
+        return {
+
+            "id": user[0],
+
+            "user_id": user[1],
+
+            "username": user[2],
+
+            "created_at": user[3]
+
+        }
+
+
+
+
+
+    return None
+
+
+
+
+
+
+
 # ==========================================================
+# Get All Users
+# Used For Broadcast System
+# ==========================================================
+
+
+def get_all_users():
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        SELECT user_id, username
+
+        FROM users
+
+        """
+
+    )
+
+
+
+
+
+    rows = cursor.fetchall()
+
+
+    conn.close()
+
+
+
+
+
+    users = []
+
+
+
+
+
+    for row in rows:
+
+
+        users.append(
+
+            {
+
+                "user_id": row[0],
+
+                "username": row[1]
+
+            }
+
+        )
+
+
+
+
+
+    return users
+
+
+
+
+
+
+
+# ==========================================================
+# Count Users
+# ==========================================================
+
+
+def count_users():
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        SELECT COUNT(*)
+
+        FROM users
+
+        """
+
+    )
+
+
+
+
+
+    count = cursor.fetchone()[0]
+
+
+    conn.close()
+
+
+
+
+
+    return count
+    # ==========================================================
+# Orders Management
+# Part 3/8
+# ==========================================================
+
+
 
 
 
@@ -244,9 +501,11 @@ def create_order(
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    cursor = db.cursor()
+    cursor = conn.cursor()
+
+
 
 
 
@@ -260,11 +519,10 @@ def create_order(
             days,
             price,
             status,
-            created
+            created_at
         )
 
-        VALUES
-        (?,?,?,?,?,?)
+        VALUES (?, ?, ?, ?, ?, ?)
 
         """,
 
@@ -280,7 +538,11 @@ def create_order(
 
             "pending",
 
-            datetime.now().isoformat()
+            datetime.now().strftime(
+
+                "%Y-%m-%d %H:%M:%S"
+
+            )
 
         )
 
@@ -288,13 +550,19 @@ def create_order(
 
 
 
+
+
     order_id = cursor.lastrowid
 
 
 
-    db.commit()
 
-    db.close()
+
+    conn.commit()
+
+    conn.close()
+
+
 
 
 
@@ -307,7 +575,7 @@ def create_order(
 
 
 # ==========================================================
-# Last Order
+# Get Last User Order
 # ==========================================================
 
 
@@ -318,12 +586,11 @@ def last_order(
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    db.row_factory = sqlite3.Row
+    cursor = conn.cursor()
 
 
-    cursor = db.cursor()
 
 
 
@@ -334,7 +601,7 @@ def last_order(
 
         FROM orders
 
-        WHERE user_id=?
+        WHERE user_id = ?
 
         ORDER BY id DESC
 
@@ -352,15 +619,43 @@ def last_order(
 
 
 
+
+
     order = cursor.fetchone()
 
 
-
-    db.close()
-
+    conn.close()
 
 
-    return order
+
+
+
+    if order:
+
+
+        return {
+
+            "id": order[0],
+
+            "user_id": order[1],
+
+            "volume": order[2],
+
+            "days": order[3],
+
+            "price": order[4],
+
+            "status": order[5],
+
+            "created_at": order[6]
+
+        }
+
+
+
+
+
+    return None
 
 
 
@@ -369,72 +664,22 @@ def last_order(
 
 
 # ==========================================================
-# Update Order Status
+# Get Order By ID
 # ==========================================================
 
 
-def update_order_status(
+def get_order(
 
-    order_id,
-
-    status
+    order_id
 
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    cursor = db.cursor()
-
-
-
-    cursor.execute(
-
-        """
-        UPDATE orders
-
-        SET status=?
-
-        WHERE id=?
-
-        """,
-
-        (
-
-            status,
-
-            order_id
-
-        )
-
-    )
+    cursor = conn.cursor()
 
 
-
-    db.commit()
-
-    db.close()
-
-
-
-
-
-
-
-# ==========================================================
-# Pending Orders
-# ==========================================================
-
-
-def get_pending_orders():
-
-
-    db = get_db()
-
-    db.row_factory = sqlite3.Row
-
-
-    cursor = db.cursor()
 
 
 
@@ -445,7 +690,88 @@ def get_pending_orders():
 
         FROM orders
 
-        WHERE status='pending'
+        WHERE id = ?
+
+        """,
+
+        (
+
+            order_id,
+
+        )
+
+    )
+
+
+
+
+
+    order = cursor.fetchone()
+
+
+    conn.close()
+
+
+
+
+
+    if order:
+
+
+        return {
+
+            "id": order[0],
+
+            "user_id": order[1],
+
+            "volume": order[2],
+
+            "days": order[3],
+
+            "price": order[4],
+
+            "status": order[5],
+
+            "created_at": order[6]
+
+        }
+
+
+
+
+
+    return None
+
+
+
+
+
+
+
+# ==========================================================
+# Get Pending Orders
+# ==========================================================
+
+
+def get_pending_orders():
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE status = 'pending'
 
         ORDER BY id DESC
 
@@ -455,19 +781,59 @@ def get_pending_orders():
 
 
 
-    orders = cursor.fetchall()
+
+
+    rows = cursor.fetchall()
+
+
+    conn.close()
 
 
 
-    db.close()
+
+
+    orders = []
+
+
+
+
+
+    for order in rows:
+
+
+        orders.append(
+
+            {
+
+                "id": order[0],
+
+                "user_id": order[1],
+
+                "volume": order[2],
+
+                "days": order[3],
+
+                "price": order[4],
+
+                "status": order[5],
+
+                "created_at": order[6]
+
+            }
+
+        )
+
+
 
 
 
     return orders
     # ==========================================================
-# Receipts
-# Part 4/5
+# Receipts Management
+# Part 4/8
 # ==========================================================
+
+
 
 
 
@@ -485,50 +851,9 @@ def save_receipt(
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    cursor = db.cursor()
-
-
-
-    cursor.execute(
-
-        """
-        SELECT id
-
-        FROM orders
-
-        WHERE user_id=?
-
-        ORDER BY id DESC
-
-        LIMIT 1
-
-        """,
-
-        (
-
-            user_id,
-
-        )
-
-    )
-
-
-
-    order = cursor.fetchone()
-
-
-
-    order_id = None
-
-
-
-    if order:
-
-        order_id = order[0]
-
-
+    cursor = conn.cursor()
 
 
 
@@ -540,13 +865,11 @@ def save_receipt(
         INSERT INTO receipts
         (
             user_id,
-            order_id,
             file_id,
-            created
+            created_at
         )
 
-        VALUES
-        (?,?,?,?)
+        VALUES (?, ?, ?)
 
         """,
 
@@ -554,11 +877,13 @@ def save_receipt(
 
             user_id,
 
-            order_id,
-
             file_id,
 
-            datetime.now().isoformat()
+            datetime.now().strftime(
+
+                "%Y-%m-%d %H:%M:%S"
+
+            )
 
         )
 
@@ -566,13 +891,11 @@ def save_receipt(
 
 
 
-    db.commit()
-
-    db.close()
 
 
+    conn.commit()
 
-    return True
+    conn.close()
 
 
 
@@ -581,23 +904,22 @@ def save_receipt(
 
 
 # ==========================================================
-# Get Receipt
+# Get User Receipts
 # ==========================================================
 
 
-def get_receipt(
+def get_user_receipts(
 
     user_id
 
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    db.row_factory = sqlite3.Row
+    cursor = conn.cursor()
 
 
-    cursor = db.cursor()
 
 
 
@@ -608,7 +930,98 @@ def get_receipt(
 
         FROM receipts
 
-        WHERE user_id=?
+        WHERE user_id = ?
+
+        ORDER BY id DESC
+
+        """,
+
+        (
+
+            user_id,
+
+        )
+
+    )
+
+
+
+
+
+    rows = cursor.fetchall()
+
+
+    conn.close()
+
+
+
+
+
+    receipts = []
+
+
+
+
+
+    for row in rows:
+
+
+        receipts.append(
+
+            {
+
+                "id": row[0],
+
+                "user_id": row[1],
+
+                "file_id": row[2],
+
+                "created_at": row[3]
+
+            }
+
+        )
+
+
+
+
+
+    return receipts
+
+
+
+
+
+
+
+# ==========================================================
+# Get Last Receipt
+# ==========================================================
+
+
+def get_last_receipt(
+
+    user_id
+
+):
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        SELECT *
+
+        FROM receipts
+
+        WHERE user_id = ?
 
         ORDER BY id DESC
 
@@ -626,19 +1039,43 @@ def get_receipt(
 
 
 
+
+
     receipt = cursor.fetchone()
 
 
-
-    db.close()
-
+    conn.close()
 
 
-    return receipt
+
+
+
+    if receipt:
+
+
+        return {
+
+            "id": receipt[0],
+
+            "user_id": receipt[1],
+
+            "file_id": receipt[2],
+
+            "created_at": receipt[3]
+
+        }
+
+
+
+
+
+    return None
     # ==========================================================
-# Services + Stats + Test
-# Part 5/5
+# Services Management
+# Part 5/8
 # ==========================================================
+
+
 
 
 
@@ -662,9 +1099,11 @@ def save_service(
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    cursor = db.cursor()
+    cursor = conn.cursor()
+
+
 
 
 
@@ -678,11 +1117,10 @@ def save_service(
             subscription_url,
             volume,
             days,
-            created
+            created_at
         )
 
-        VALUES
-        (?,?,?,?,?,?)
+        VALUES (?, ?, ?, ?, ?, ?)
 
         """,
 
@@ -698,7 +1136,11 @@ def save_service(
 
             days,
 
-            datetime.now().isoformat()
+            datetime.now().strftime(
+
+                "%Y-%m-%d %H:%M:%S"
+
+            )
 
         )
 
@@ -706,13 +1148,11 @@ def save_service(
 
 
 
-    db.commit()
-
-    db.close()
 
 
+    conn.commit()
 
-    return True
+    conn.close()
 
 
 
@@ -732,12 +1172,11 @@ def get_user_service(
 ):
 
 
-    db = get_db()
+    conn = get_connection()
 
-    db.row_factory = sqlite3.Row
+    cursor = conn.cursor()
 
 
-    cursor = db.cursor()
 
 
 
@@ -748,7 +1187,7 @@ def get_user_service(
 
         FROM services
 
-        WHERE user_id=?
+        WHERE user_id = ?
 
         ORDER BY id DESC
 
@@ -766,15 +1205,43 @@ def get_user_service(
 
 
 
+
+
     service = cursor.fetchone()
 
 
-
-    db.close()
-
+    conn.close()
 
 
-    return service
+
+
+
+    if service:
+
+
+        return {
+
+            "id": service[0],
+
+            "user_id": service[1],
+
+            "username": service[2],
+
+            "subscription_url": service[3],
+
+            "volume": service[4],
+
+            "days": service[5],
+
+            "created_at": service[6]
+
+        }
+
+
+
+
+
+    return None
 
 
 
@@ -783,24 +1250,310 @@ def get_user_service(
 
 
 # ==========================================================
-# Statistics
+# Get All Services
+# ==========================================================
+
+
+def get_all_services():
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        SELECT *
+
+        FROM services
+
+        ORDER BY id DESC
+
+        """
+
+    )
+
+
+
+
+
+    rows = cursor.fetchall()
+
+
+    conn.close()
+
+
+
+
+
+    services = []
+
+
+
+
+
+    for service in rows:
+
+
+        services.append(
+
+            {
+
+                "id": service[0],
+
+                "user_id": service[1],
+
+                "username": service[2],
+
+                "subscription_url": service[3],
+
+                "volume": service[4],
+
+                "days": service[5],
+
+                "created_at": service[6]
+
+            }
+
+        )
+
+
+
+
+
+    return services
+    # ==========================================================
+# Order Status Management
+# Part 6/8
+# ==========================================================
+
+
+
+
+
+# ==========================================================
+# Update Order Status
+# ==========================================================
+
+
+def update_order_status(
+
+    order_id,
+
+    status
+
+):
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        UPDATE orders
+
+        SET status = ?
+
+        WHERE id = ?
+
+        """,
+
+        (
+
+            status,
+
+            order_id
+
+        )
+
+    )
+
+
+
+
+
+    conn.commit()
+
+    conn.close()
+
+
+
+
+
+
+
+# ==========================================================
+# Get Orders By Status
+# ==========================================================
+
+
+def get_orders_by_status(
+
+    status
+
+):
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE status = ?
+
+        ORDER BY id DESC
+
+        """,
+
+        (
+
+            status,
+
+        )
+
+    )
+
+
+
+
+
+    rows = cursor.fetchall()
+
+
+    conn.close()
+
+
+
+
+
+    orders = []
+
+
+
+
+
+    for order in rows:
+
+
+        orders.append(
+
+            {
+
+                "id": order[0],
+
+                "user_id": order[1],
+
+                "volume": order[2],
+
+                "days": order[3],
+
+                "price": order[4],
+
+                "status": order[5],
+
+                "created_at": order[6]
+
+            }
+
+        )
+
+
+
+
+
+    return orders
+
+
+
+
+
+
+
+# ==========================================================
+# Count Orders By Status
+# ==========================================================
+
+
+def count_orders_status(
+
+    status
+
+):
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        SELECT COUNT(*)
+
+        FROM orders
+    # ==========================================================
+# Statistics Management
+# Part 7/8
+# ==========================================================
+
+
+
+
+
+# ==========================================================
+# Get Bot Stats
 # ==========================================================
 
 
 def get_stats():
 
 
-    db = get_db()
+    conn = get_connection()
 
-    cursor = db.cursor()
+    cursor = conn.cursor()
 
 
+
+
+
+    # تعداد کاربران
 
     cursor.execute(
 
-        "SELECT COUNT(*) FROM users"
+        """
+        SELECT COUNT(*)
+
+        FROM users
+
+        """
 
     )
+
 
     users = cursor.fetchone()[0]
 
@@ -808,11 +1561,21 @@ def get_stats():
 
 
 
+
+
+    # تعداد سفارش‌ها
+
     cursor.execute(
 
-        "SELECT COUNT(*) FROM orders"
+        """
+        SELECT COUNT(*)
+
+        FROM orders
+
+        """
 
     )
+
 
     orders = cursor.fetchone()[0]
 
@@ -820,17 +1583,31 @@ def get_stats():
 
 
 
+
+
+    # تعداد سرویس‌ها
+
     cursor.execute(
 
-        "SELECT COUNT(*) FROM services"
+        """
+        SELECT COUNT(*)
+
+        FROM services
+
+        """
 
     )
+
 
     services = cursor.fetchone()[0]
 
 
 
 
+
+
+
+    # درآمد کل پرداخت شده
 
     cursor.execute(
 
@@ -839,19 +1616,27 @@ def get_stats():
 
         FROM orders
 
-        WHERE status='paid'
+        WHERE status = 'paid'
 
         """
 
     )
 
 
-
     income = cursor.fetchone()[0]
 
 
 
+
+
+    conn.close()
+
+
+
+
+
     if income is None:
+
 
         income = 0
 
@@ -859,23 +1644,97 @@ def get_stats():
 
 
 
-    db.close()
-
 
 
     return {
 
+
         "users": users,
+
 
         "orders": orders,
 
+
         "services": services,
+
 
         "income": income
 
+
     }
+    # ==========================================================
+# Broadcast History Management
+# Part 8/8
+# ==========================================================
 
 
+
+
+
+# ==========================================================
+# Save Broadcast History
+# ==========================================================
+
+
+def save_broadcast_history(
+
+    message,
+
+    success,
+
+    failed
+
+):
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+
+
+
+    cursor.execute(
+
+        """
+        INSERT INTO broadcasts
+        (
+            message,
+            success,
+            failed,
+            created_at
+        )
+
+        VALUES (?, ?, ?, ?)
+
+        """,
+
+        (
+
+            message,
+
+            success,
+
+            failed,
+
+            datetime.now().strftime(
+
+                "%Y-%m-%d %H:%M:%S"
+
+            )
+
+        )
+
+    )
+
+
+
+
+
+    conn.commit()
+
+    conn.close()
 
 
 
@@ -884,50 +1743,128 @@ def get_stats():
 
 
 # ==========================================================
-# Test Database
+# Get Broadcast History
 # ==========================================================
 
 
-def test_database():
+def get_broadcast_history(
+
+):
 
 
-    try:
+    conn = get_connection()
 
-
-        db = get_db()
-
-        cursor = db.cursor()
+    cursor = conn.cursor()
 
 
 
-        cursor.execute(
 
-            "SELECT 1"
+
+    cursor.execute(
+
+        """
+        SELECT *
+
+        FROM broadcasts
+
+        ORDER BY id DESC
+
+        LIMIT 20
+
+        """
+
+    )
+
+
+
+
+
+    rows = cursor.fetchall()
+
+
+    conn.close()
+
+
+
+
+
+    history = []
+
+
+
+
+
+    for item in rows:
+
+
+        history.append(
+
+            {
+
+                "id": item[0],
+
+                "message": item[1],
+
+                "success": item[2],
+
+                "failed": item[3],
+
+                "created_at": item[4]
+
+            }
 
         )
 
 
 
-        db.close()
+
+
+    return history
 
 
 
-        return True
 
 
 
-    except Exception as error:
+
+# ==========================================================
+# Count Broadcasts
+# ==========================================================
+
+
+def count_broadcasts():
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
 
 
 
-        print(
-
-            "❌ DATABASE ERROR:",
-
-            error
-
-        )
 
 
+    cursor.execute(
 
-        return False
+        """
+        SELECT COUNT(*)
+
+        FROM broadcasts
+
+        """
+
+    )
+
+
+
+
+
+    count = cursor.fetchone()[0]
+
+
+    conn.close()
+
+
+
+
+
+    return count
