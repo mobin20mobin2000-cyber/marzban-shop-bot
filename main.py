@@ -3,11 +3,38 @@
 # main.py
 # ==========================================================
 
-from telegram.ext import Application
+
+from telegram.ext import (
+    Application
+)
+
 
 from config import BOT_TOKEN
-from database import init_db
-from handlers import register_handlers
+
+from database import (
+    init_db,
+    test_database
+)
+
+
+from handlers import (
+    register_handlers
+)
+
+
+
+# ==========================================================
+# بعد از شروع برنامه
+# ==========================================================
+
+async def post_init(
+    application
+):
+
+    print(
+        "✅ Telegram Connected"
+    )
+
 
 
 # ==========================================================
@@ -16,57 +43,140 @@ from handlers import register_handlers
 
 def build_application():
 
+
     application = (
+
         Application.builder()
-        .token(BOT_TOKEN)
+
+        .token(
+            BOT_TOKEN
+        )
+
+        .post_init(
+            post_init
+        )
+
         .build()
+
     )
 
-    register_handlers(application)
+
+    register_handlers(
+        application
+    )
+
 
     return application
 
 
+
+
 # ==========================================================
-# اجرای برنامه
+# اجرای اصلی
 # ==========================================================
 
 def main():
 
-    print("=" * 50)
-    print("🚀 Zeus Shop VPN PRO")
-    print("=" * 50)
+
+    print(
+        "=" * 50
+    )
+
+    print(
+        "🚀 Zeus Shop VPN PRO"
+    )
+
+    print(
+        "=" * 50
+    )
+
+
 
     if not BOT_TOKEN:
-        print("❌ BOT_TOKEN تنظیم نشده است.")
-        return
 
-    try:
-        print("📂 Initializing Database...")
-        init_db()
 
-        print("🤖 Building Telegram Application...")
-        application = build_application()
-
-        print("✅ Config loaded successfully")
-        print("🚀 Zeus Shop VPN Bot Started")
-        print("⏳ Waiting for updates...")
-
-        application.run_polling(
-            poll_interval=1.0,
-            timeout=30,
-            bootstrap_retries=5,
-            drop_pending_updates=True,
-            allowed_updates=None,
-            close_loop=False,
+        print(
+            "❌ BOT_TOKEN تنظیم نشده است"
         )
 
+        return
+
+
+
+
+    try:
+
+
+        print(
+            "📂 Checking Database..."
+        )
+
+
+        init_db()
+
+
+
+        if test_database():
+
+
+            print(
+                "✅ Database Connected"
+            )
+
+        else:
+
+
+            print(
+                "❌ Database Error"
+            )
+
+            return
+
+
+
+
+
+        print(
+            "🤖 Loading Telegram Bot..."
+        )
+
+
+        application = build_application()
+
+
+
+        print(
+            "✅ Bot Started"
+        )
+
+
+        print(
+            "⏳ Waiting for messages..."
+        )
+
+
+
+        application.run_polling()
+
+
+
     except KeyboardInterrupt:
-        print("🛑 Bot stopped by user.")
+
+
+        print(
+            "🛑 Bot stopped"
+        )
+
+
 
     except Exception as error:
-        print(f"❌ Fatal Error: {error}")
-        raise
+
+
+        print(
+            "❌ Fatal Error:",
+            error
+        )
+
 
 
 # ==========================================================
@@ -74,4 +184,5 @@ def main():
 # ==========================================================
 
 if __name__ == "__main__":
+
     main()
