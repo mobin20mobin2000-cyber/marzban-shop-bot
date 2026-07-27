@@ -1,54 +1,53 @@
 # ==========================================================
 # Zeus Shop VPN PRO
 # broadcast.py
-# CLEAN VERSION
+# Part 1/3
 # ==========================================================
 
+import asyncio
 
-import sqlite3
-from datetime import datetime
+from telegram import Bot
 
-
-from database import get_all_users
-
-
-
-DB_NAME = "zeus.db"
-
-
-
+from database import (
+    get_all_users,
+    save_broadcast_history
+)
 
 
 # ==========================================================
-# Send Message To All Users
+# Delay
 # ==========================================================
 
+SEND_DELAY = 0.05
 
-async def send_broadcast(
 
-    bot,
+# ==========================================================
+# Broadcast
+# ==========================================================
 
-    message
+async def broadcast_message(
+
+    bot: Bot,
+
+    message: str
 
 ):
 
-
     users = get_all_users()
-
 
     success = 0
 
     failed = 0
+    # ==========================================================
+# Send Broadcast
+# Part 2/3
+# ==========================================================
 
-
-
-
+    total = len(users)
 
     for user in users:
 
-
         try:
-
 
             await bot.send_message(
 
@@ -58,229 +57,168 @@ async def send_broadcast(
 
             )
 
-
             success += 1
 
-
-
-
-
-        except Exception as error:
-
-
-            print(
-
-                "BROADCAST ERROR:",
-
-                error
-
-            )
-
+        except Exception:
 
             failed += 1
 
-
-
-
-
-    return {
-
-        "success": success,
-
-        "failed": failed,
-
-        "total": len(users)
-
-    }
-
-
-
-
-
-
-
-
-
-# ==========================================================
-# Professional Broadcast Message
-# ==========================================================
-
-
-async def send_broadcast_pro(
-
-    bot,
-
-    message
-
-):
-
-
-    text = f"""
-👑 Zeus Shop VPN
-
-━━━━━━━━━━━━━━
-
-{message}
-
-━━━━━━━━━━━━━━
-
-❤️ ممنون از همراهی شما
-"""
-
-
-
-    return await send_broadcast(
-
-        bot,
-
-        text
-
-    )
-
-
-
-
-
-
-
-
-
-# ==========================================================
-# Save Broadcast History
-# ==========================================================
-
-
-def save_broadcast_history(
-
-    message,
-
-    success,
-
-    failed
-
-):
-
-
-    conn = sqlite3.connect(
-
-        DB_NAME
-
-    )
-
-
-    cursor = conn.cursor()
-
-
-
-
-
-    cursor.execute("""
-
-    CREATE TABLE IF NOT EXISTS broadcasts (
-
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-        message TEXT,
-
-        success INTEGER,
-
-        failed INTEGER,
-
-        created_at TEXT
-
-    )
-
-    """)
-
-
-
-
-
-    cursor.execute(
-
-        """
-        INSERT INTO broadcasts
-        (
-            message,
-            success,
-            failed,
-            created_at
-        )
-
-        VALUES (?, ?, ?, ?)
-
-        """,
-
-        (
-
-            message,
-
-            success,
-
-            failed,
-
-            datetime.now().strftime(
-
-                "%Y-%m-%d %H:%M:%S"
-
-            )
-
-        )
-
-    )
-
-
-
-
-
-    conn.commit()
-
-    conn.close()
-
-
-
-
-
-
-
-# ==========================================================
-# Final Broadcast
-# ==========================================================
-
-
-async def broadcast_message(
-
-    bot,
-
-    message
-
-):
-
-
-    result = await send_broadcast_pro(
-
-        bot,
-
-        message
-
-    )
-
-
-
-
+        await asyncio.sleep(SEND_DELAY)
 
     save_broadcast_history(
 
         message,
 
-        result["success"],
+        success,
 
-        result["failed"]
+        failed
 
     )
 
+    return {
+
+        "total": total,
+
+        "success": success,
+
+        "failed": failed
+
+    }
+    # ==========================================================
+# Zeus Shop VPN PRO
+# broadcast.py
+# Part 3/3
+# ==========================================================
 
 
+# ==========================================================
+# Broadcast Photo
+# ==========================================================
+
+async def broadcast_photo(
+
+    bot: Bot,
+
+    photo,
+
+    caption=""
+
+):
+
+    users = get_all_users()
+
+    success = 0
+
+    failed = 0
+
+    total = len(users)
+
+    for user in users:
+
+        try:
+
+            await bot.send_photo(
+
+                chat_id=user["user_id"],
+
+                photo=photo,
+
+                caption=caption
+
+            )
+
+            success += 1
+
+        except Exception:
+
+            failed += 1
+
+        await asyncio.sleep(SEND_DELAY)
+
+    save_broadcast_history(
+
+        caption,
+
+        success,
+
+        failed
+
+    )
+
+    return {
+
+        "total": total,
+
+        "success": success,
+
+        "failed": failed
+
+    }
 
 
-    return result
+# ==========================================================
+# Broadcast Document
+# ==========================================================
+
+async def broadcast_document(
+
+    bot: Bot,
+
+    document,
+
+    caption=""
+
+):
+
+    users = get_all_users()
+
+    success = 0
+
+    failed = 0
+
+    total = len(users)
+
+    for user in users:
+
+        try:
+
+            await bot.send_document(
+
+                chat_id=user["user_id"],
+
+                document=document,
+
+                caption=caption
+
+            )
+
+            success += 1
+
+        except Exception:
+
+            failed += 1
+
+        await asyncio.sleep(SEND_DELAY)
+
+    save_broadcast_history(
+
+        caption,
+
+        success,
+
+        failed
+
+    )
+
+    return {
+
+        "total": total,
+
+        "success": success,
+
+        "failed": failed
+
+    }
+
+
+print("✅ Broadcast Module Loaded")
