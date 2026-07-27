@@ -9,24 +9,18 @@ import sqlite3
 from datetime import datetime
 
 
-
 DB_NAME = "zeus.db"
 
 
 
-
-
 # ==========================================================
-# Database Connection
+# Connection
 # ==========================================================
 
 
 def get_db():
 
-    return sqlite3.connect(
-        DB_NAME
-    )
-
+    return sqlite3.connect(DB_NAME)
 
 
 
@@ -45,73 +39,57 @@ def init_db():
 
 
 
-    # Users
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users
-        (
-            id INTEGER PRIMARY KEY,
-            username TEXT,
-            created TEXT
-        )
-        """
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users
+    (
+        id INTEGER PRIMARY KEY,
+        username TEXT,
+        created TEXT
     )
+    """)
 
 
 
-    # Orders
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS orders
-        (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            volume TEXT,
-            days INTEGER,
-            price INTEGER,
-            status TEXT,
-            created TEXT
-        )
-        """
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS orders
+    (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        volume TEXT,
+        days INTEGER,
+        price INTEGER,
+        status TEXT,
+        created TEXT
     )
+    """)
 
 
 
-    # Receipts
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS receipts
-        (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            order_id INTEGER,
-            file_id TEXT,
-            created TEXT
-        )
-        """
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS receipts
+    (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        order_id INTEGER,
+        file_id TEXT,
+        created TEXT
     )
+    """)
 
 
 
-    # Services
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS services
-        (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            username TEXT,
-            subscription_url TEXT,
-            volume TEXT,
-            days INTEGER,
-            created TEXT
-        )
-        """
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS services
+    (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        username TEXT,
+        subscription_url TEXT,
+        volume TEXT,
+        days INTEGER,
+        created TEXT
     )
+    """)
 
 
 
@@ -122,7 +100,7 @@ def init_db():
 
 
     print(
-        "✅ Database Initialized"
+        "✅ Database Ready"
     )
     # ==========================================================
 # Users
@@ -163,6 +141,7 @@ def add_user(
 
         VALUES
         (?,?,?)
+
         """,
 
         (
@@ -286,6 +265,7 @@ def create_order(
 
         VALUES
         (?,?,?,?,?,?)
+
         """,
 
         (
@@ -511,10 +491,6 @@ def save_receipt(
 
 
 
-
-
-    # گرفتن آخرین سفارش کاربر
-
     cursor.execute(
 
         """
@@ -544,14 +520,11 @@ def save_receipt(
 
 
 
-
-
     order_id = None
 
 
 
     if order:
-
 
         order_id = order[0]
 
@@ -596,8 +569,6 @@ def save_receipt(
     db.commit()
 
     db.close()
-
-
 
 
 
@@ -665,7 +636,7 @@ def get_receipt(
 
     return receipt
     # ==========================================================
-# Services + Stats
+# Services + Stats + Test
 # Part 5/5
 # ==========================================================
 
@@ -816,4 +787,147 @@ def get_user_service(
 # ==========================================================
 
 
-def get_stats
+def get_stats():
+
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+
+    cursor.execute(
+
+        "SELECT COUNT(*) FROM users"
+
+    )
+
+    users = cursor.fetchone()[0]
+
+
+
+
+
+    cursor.execute(
+
+        "SELECT COUNT(*) FROM orders"
+
+    )
+
+    orders = cursor.fetchone()[0]
+
+
+
+
+
+    cursor.execute(
+
+        "SELECT COUNT(*) FROM services"
+
+    )
+
+    services = cursor.fetchone()[0]
+
+
+
+
+
+    cursor.execute(
+
+        """
+        SELECT SUM(price)
+
+        FROM orders
+
+        WHERE status='paid'
+
+        """
+
+    )
+
+
+
+    income = cursor.fetchone()[0]
+
+
+
+    if income is None:
+
+        income = 0
+
+
+
+
+
+    db.close()
+
+
+
+    return {
+
+        "users": users,
+
+        "orders": orders,
+
+        "services": services,
+
+        "income": income
+
+    }
+
+
+
+
+
+
+
+
+
+# ==========================================================
+# Test Database
+# ==========================================================
+
+
+def test_database():
+
+
+    try:
+
+
+        db = get_db()
+
+        cursor = db.cursor()
+
+
+
+        cursor.execute(
+
+            "SELECT 1"
+
+        )
+
+
+
+        db.close()
+
+
+
+        return True
+
+
+
+    except Exception as error:
+
+
+
+        print(
+
+            "❌ DATABASE ERROR:",
+
+            error
+
+        )
+
+
+
+        return False
