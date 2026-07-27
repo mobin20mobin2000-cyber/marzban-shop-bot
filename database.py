@@ -49,6 +49,8 @@ def init_db():
 
 
 
+    # Users
+
     cursor.execute("""
 
     CREATE TABLE IF NOT EXISTS users(
@@ -65,6 +67,9 @@ def init_db():
 
 
 
+
+
+    # Orders
 
     cursor.execute("""
 
@@ -93,6 +98,9 @@ def init_db():
 
 
 
+
+    # Receipts
+
     cursor.execute("""
 
     CREATE TABLE IF NOT EXISTS receipts(
@@ -115,6 +123,9 @@ def init_db():
 
 
 
+
+
+    # Services
 
     cursor.execute("""
 
@@ -143,6 +154,9 @@ def init_db():
 
 
 
+
+    # Discounts
+
     cursor.execute("""
 
     CREATE TABLE IF NOT EXISTS discounts(
@@ -153,7 +167,7 @@ def init_db():
 
         percent INTEGER,
 
-        active INTEGER
+        active INTEGER DEFAULT 1
 
     )
 
@@ -334,7 +348,7 @@ def create_order(
 
 
 # ==========================================================
-# Last User Order
+# Last Order
 # ==========================================================
 
 
@@ -394,7 +408,7 @@ def last_order(
 
 
 # ==========================================================
-# Get Order
+# Get Order By ID
 # ==========================================================
 
 
@@ -450,12 +464,53 @@ def get_order(
 
 
 # ==========================================================
-# Update Order
+# Update Order Status
 # ==========================================================
 
 
-def update_order
-# ==========================================================
+def update_order_status(
+
+    order_id,
+
+    status
+
+):
+
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+
+    cursor.execute(
+
+        """
+
+        UPDATE orders
+
+        SET status=?
+
+        WHERE id=?
+
+        """,
+
+        (
+
+            status,
+
+            order_id
+
+        )
+
+    )
+
+
+
+    db.commit()
+
+    db.close()
+    # ==========================================================
 # Receipts & Services
 # Part 3/4
 # ==========================================================
@@ -539,7 +594,67 @@ def save_receipt(
 
 
 # ==========================================================
-# Update Receipt Status
+# Get Receipt
+# ==========================================================
+
+
+def get_receipt(
+
+    order_id
+
+):
+
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+
+    cursor.execute(
+
+        """
+
+        SELECT *
+
+        FROM receipts
+
+        WHERE order_id=?
+
+        ORDER BY id DESC
+
+        LIMIT 1
+
+        """,
+
+        (
+
+            order_id,
+
+        )
+
+    )
+
+
+
+    receipt = cursor.fetchone()
+
+
+
+    db.close()
+
+
+
+    return receipt
+
+
+
+
+
+
+
+# ==========================================================
+# Update Receipt
 # ==========================================================
 
 
@@ -694,7 +809,93 @@ def get_user_service(
 
     db = get_db()
 
-    cursor =
+    cursor = db.cursor()
+
+
+
+    cursor.execute(
+
+        """
+
+        SELECT *
+
+        FROM services
+
+        WHERE user_id=?
+
+        AND status='active'
+
+        ORDER BY id DESC
+
+        LIMIT 1
+
+        """,
+
+        (
+
+            user_id,
+
+        )
+
+    )
+
+
+
+    service = cursor.fetchone()
+
+
+
+    db.close()
+
+
+
+    return service
+
+
+
+
+
+
+
+# ==========================================================
+# Get All Services
+# ==========================================================
+
+
+def get_all_services():
+
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+
+    cursor.execute(
+
+        """
+
+        SELECT *
+
+        FROM services
+
+        ORDER BY id DESC
+
+        """
+
+    )
+
+
+
+    services = cursor.fetchall()
+
+
+
+    db.close()
+
+
+
+    return services
     # ==========================================================
 # Discount + Admin + Test
 # Part 4/4
@@ -703,7 +904,7 @@ def get_user_service(
 
 
 # ==========================================================
-# Add Discount
+# Add Discount Code
 # ==========================================================
 
 
@@ -877,6 +1078,54 @@ def disable_discount(
 
 
 # ==========================================================
+# Pending Orders
+# ==========================================================
+
+
+def get_pending_orders():
+
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+
+    cursor.execute(
+
+        """
+
+        SELECT *
+
+        FROM orders
+
+        WHERE status='pending'
+
+        ORDER BY id DESC
+
+        """
+
+    )
+
+
+
+    orders = cursor.fetchall()
+
+
+
+    db.close()
+
+
+
+    return orders
+
+
+
+
+
+
+
+# ==========================================================
 # Statistics
 # ==========================================================
 
@@ -951,8 +1200,6 @@ def get_stats():
 
 
 
-
-
     db.close()
 
 
@@ -990,54 +1237,6 @@ def get_stats():
 
 
 # ==========================================================
-# Pending Orders
-# ==========================================================
-
-
-def get_pending_orders():
-
-
-    db = get_db()
-
-    cursor = db.cursor()
-
-
-
-    cursor.execute(
-
-        """
-
-        SELECT *
-
-        FROM orders
-
-        WHERE status='pending'
-
-        ORDER BY id DESC
-
-        """
-
-    )
-
-
-
-    orders = cursor.fetchall()
-
-
-
-    db.close()
-
-
-
-    return orders
-
-
-
-
-
-
-
-# ==========================================================
 # Database Test
 # ==========================================================
 
@@ -1053,6 +1252,7 @@ def test_database():
         cursor = db.cursor()
 
 
+
         cursor.execute(
 
             "SELECT 1"
@@ -1061,6 +1261,7 @@ def test_database():
 
 
         result = cursor.fetchone()
+
 
 
         db.close()
