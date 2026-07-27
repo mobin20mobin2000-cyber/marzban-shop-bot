@@ -1,1115 +1,1406 @@
 # ==========================================================
 # Zeus Shop VPN PRO
-# handlers.py
-# Part 1
+# database.py
+# Part 1/4
 # ==========================================================
 
-
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup
-)
+import sqlite3
 
 
-from telegram.ext import (
-    ContextTypes
-)
-
-
-from config import (
-    ADMIN_ID,
-    CARD_NUMBER
-)
-
-
-from database import (
-    add_user,
-    get_user_service
-)
-
-
-
+DATABASE = "zeus.db"
 
 
 # ==========================================================
-# Main Keyboard
+# اتصال دیتابیس
 # ==========================================================
 
+def get_db():
 
-def main_keyboard():
-
-    keyboard = [
-
-        [
-            InlineKeyboardButton(
-                "🛒 خرید اشتراک",
-                callback_data="buy"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "📦 سرویس من",
-                callback_data="my_service"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "💳 پرداخت",
-                callback_data="payment"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "🆘 پشتیبانی",
-                callback_data="support"
-            )
-        ]
-
-    ]
-
-
-    return InlineKeyboardMarkup(
-        keyboard
+    db = sqlite3.connect(
+        DATABASE
     )
 
+    db.row_factory = sqlite3.Row
 
+    return db
 
 
 
 # ==========================================================
-# Start
+# ساخت جداول
+# ==========================================================
+
+def init_db():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    # کاربران
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        telegram_id INTEGER UNIQUE NOT NULL,
+
+        username TEXT,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # سفارش‌ها
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS orders(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        telegram_id INTEGER NOT NULL,
+
+        plan TEXT,
+
+        volume INTEGER,
+
+        days INTEGER,
+
+        price INTEGER,
+
+        coupon TEXT,
+
+        status TEXT DEFAULT 'pending',
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # سرویس‌ها
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS subscriptions(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        telegram_id INTEGER NOT NULL,
+
+        order_id INTEGER,
+
+        username TEXT,
+
+        subscription_url TEXT,
+
+        volume INTEGER,
+
+        days INTEGER,
+
+        expire_date TEXT,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # رسیدهای پرداخت
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS receipts(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        telegram_id INTEGER NOT NULL,
+
+        file_id TEXT,
+
+        status TEXT DEFAULT 'pending',
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # کد تخفیف
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS coupons(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        code TEXT UNIQUE,
+
+        percent INTEGER,
+
+        max_use INTEGER,
+
+        used INTEGER DEFAULT 0,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    # پشتیبانی
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS support(
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        telegram_id INTEGER,
+
+        message TEXT,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+    """)
+
+
+
+    db.commit()
+
+    db.close()
+
+
+
+# ==========================================================
+# کاربران
 # ==========================================================
 
 
-async def start(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+def add_user(
+    telegram_id,
+    username=None
 ):
 
-    user = update.effective_user
+    db = get_db()
+
+    cursor = db.cursor()
 
 
-    add_user(
-        user.id,
-        user.username
-    )
-
-
-    text = f"""
-👑 Zeus Shop VPN PRO
-
-
-سلام {user.first_name} 🌹
-
-
-به ربات فروش اشتراک VPN خوش آمدید.
-
-
-🚀 سرعت بالا
-🔒 امنیت پایدار
-🌍 سرورهای قدرتمند
-
-
-از منوی زیر انتخاب کنید:
-"""
-
-
-    await update.message.reply_text(
-
-        text,
-
-        reply_markup=main_keyboard()
-
-    )
-
-
-
-
-
-# ==========================================================
-# My Service
-# ==========================================================
-
-
-async def my_service(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    query = update.callback_query
-
-
-    await query.answer()
-
-
-    user_id = query.from_user.id
-
-
-    service = get_user_service(
-        user_id
-    )
-
-
-
-    if not service:
-
-
-        await query.edit_message_text(
-
-            """
-❌ شما هنوز سرویس فعالی ندارید.
-
-برای خرید اشتراک از بخش خرید استفاده کنید.
-"""
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO users
+        (
+            telegram_id,
+            username
         )
 
+        VALUES (?,?)
 
-        return
-
-
-
-
-    text = f"""
-📦 سرویس من
-
-
-👤 Username:
-
-{service['username']}
-
-
-🌐 لینک اتصال:
-
-{service['subscription_url']}
-
-
-📊 حجم:
-
-{service['volume']} GB
-
-
-⏳ مدت:
-
-{service['days']} روز
-
-
-✅ وضعیت:
-
-فعال
-"""
-
-
-    await query.edit_message_text(
-        text
+        """,
+        (
+            telegram_id,
+            username
+        )
     )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+def get_user(
+    telegram_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM users
+
+        WHERE telegram_id=?
+
+        """,
+        (
+            telegram_id,
+        )
+    )
+
+
+    user = cursor.fetchone()
+
+
+    db.close()
+
+
+    return user
+
+
+
+
+def all_users():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM users
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    users = cursor.fetchall()
+
+
+    db.close()
+
+
+    return users
+
+
+
+
+def users_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+
+        FROM users
+
+        """
+    )
+
+
+    count = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return count
     # ==========================================================
-# Buy System
-# Part 2
+# سفارش‌ها
+# Part 2/4
 # ==========================================================
 
 
-from database import (
-    create_order,
-    last_order
-)
-
-
-
-
-
-# ==========================================================
-# Plans Keyboard
-# ==========================================================
-
-
-def plans_keyboard():
-
-    keyboard = [
-
-        [
-            InlineKeyboardButton(
-                "🥉 یک ماهه | 50GB | 50,000 تومان",
-                callback_data="plan_30"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "🥈 دو ماهه | 100GB | 90,000 تومان",
-                callback_data="plan_60"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "🥇 سه ماهه | 200GB | 150,000 تومان",
-                callback_data="plan_90"
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "🔙 بازگشت",
-                callback_data="back"
-            )
-        ]
-
-    ]
-
-
-    return InlineKeyboardMarkup(
-        keyboard
-    )
-
-
-
-
-
-# ==========================================================
-# Buy Button
-# ==========================================================
-
-
-async def buy(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+def create_order(
+    telegram_id,
+    plan,
+    volume,
+    days,
+    price,
+    coupon=None
 ):
 
-    query = update.callback_query
+    db = get_db()
+
+    cursor = db.cursor()
 
 
-    await query.answer()
-
-
-
-    await query.edit_message_text(
-
+    cursor.execute(
         """
-🛒 خرید اشتراک Zeus VPN
-
-
-پلن مورد نظر را انتخاب کنید:
-""",
-
-        reply_markup=plans_keyboard()
-
-    )
-
-
-
-
-
-# ==========================================================
-# Select Plan
-# ==========================================================
-
-
-async def select_plan(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    query = update.callback_query
-
-
-    await query.answer()
-
-
-    user_id = query.from_user.id
-
-
-    plan = query.data
-
-
-
-    if plan == "plan_30":
-
-        data = {
-
-            "name": "یک ماهه",
-
-            "volume": 50,
-
-            "days": 30,
-
-            "price": 50000
-
-        }
-
-
-
-    elif plan == "plan_60":
-
-        data = {
-
-            "name": "دو ماهه",
-
-            "volume": 100,
-
-            "days": 60,
-
-            "price": 90000
-
-        }
-
-
-
-    elif plan == "plan_90":
-
-        data = {
-
-            "name": "سه ماهه",
-
-            "volume": 200,
-
-            "days": 90,
-
-            "price": 150000
-
-        }
-
-
-    else:
-
-        return
-
-
-
-
-
-    order_id = create_order(
-
-        telegram_id=user_id,
-
-        plan=data["name"],
-
-        volume=data["volume"],
-
-        days=data["days"],
-
-        price=data["price"]
-
-    )
-
-
-
-    context.user_data["order_id"] = order_id
-
-
-
-
-
-    await query.edit_message_text(
-
-        f"""
-✅ سفارش شما ثبت شد.
-
-
-📦 پلن:
-
-{data['name']}
-
-
-📊 حجم:
-
-{data['volume']}GB
-
-
-⏳ مدت:
-
-{data['days']} روز
-
-
-💰 مبلغ:
-
-{data['price']:,} تومان
-
-
-لطفاً از بخش پرداخت، رسید خود را ارسال کنید.
-""",
-
-        reply_markup=InlineKeyboardMarkup([
-
-            [
-
-                InlineKeyboardButton(
-
-                    "💳 پرداخت",
-
-                    callback_data="payment"
-
-                )
-
-            ]
-
-        ])
-
-            )
-    # ==========================================================
-# Payment + Support + Admin
-# Part 3
-# ==========================================================
-
-
-from database import (
-    save_receipt,
-    save_support_message,
-    get_order,
-    update_order_status,
-    save_service
-)
-
-
-from marzban import Marzban
-
-
-
-
-
-# ==========================================================
-# Payment
-# ==========================================================
-
-
-async def payment(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    query = update.callback_query
-
-
-    await query.answer()
-
-
-
-    await query.edit_message_text(
-
-        f"""
-💳 پرداخت دستی Zeus VPN
-
-
-شماره کارت:
-
-{CARD_NUMBER}
-
-
-بعد از پرداخت،
-عکس رسید را ارسال کنید.
-
-
-✅ رسید توسط مدیریت بررسی می‌شود.
-"""
-
-    )
-
-
-
-
-
-# ==========================================================
-# Receipt Photo
-# ==========================================================
-
-
-async def receipt_photo(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    user_id = update.message.from_user.id
-
-
-    photo = update.message.photo[-1]
-
-
-    file_id = photo.file_id
-
-
-
-    save_receipt(
-
-        user_id,
-
-        file_id
-
-    )
-
-
-
-    await update.message.reply_text(
-
-        """
-✅ رسید دریافت شد.
-
-
-بعد از تایید مدیریت،
-سرویس شما ساخته می‌شود.
-"""
-
-    )
-
-
-
-    await context.bot.send_photo(
-
-        chat_id=ADMIN_ID,
-
-        photo=file_id,
-
-        caption=f"""
-📥 رسید پرداخت جدید
-
-
-👤 User ID:
-
-{user_id}
-
-
-برای تایید:
-
-/approve {user_id}
-
-
-برای رد:
-
-/reject {user_id}
-"""
-
-    )
-
-
-
-
-
-# ==========================================================
-# Support
-# ==========================================================
-
-
-async def support(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    query = update.callback_query
-
-
-    await query.answer()
-
-
-
-    context.user_data["waiting_support"] = True
-
-
-
-    await query.edit_message_text(
-
-        """
-🆘 پشتیبانی Zeus VPN
-
-
-پیام خود را ارسال کنید.
-"""
-
-    )
-
-
-
-
-
-async def support_message(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-
-    if not context.user_data.get(
-        "waiting_support"
-    ):
-
-        return
-
-
-
-    user_id = update.message.from_user.id
-
-
-    message = update.message.text
-
-
-
-    save_support_message(
-
-        user_id,
-
-        message
-
-    )
-
-
-    context.user_data["waiting_support"] = False
-
-
-
-    await update.message.reply_text(
-
-        """
-✅ پیام شما ارسال شد.
-"""
-
-    )
-
-
-
-    await context.bot.send_message(
-
-        chat_id=ADMIN_ID,
-
-        text=f"""
-🆘 پیام پشتیبانی
-
-
-👤 کاربر:
-
-{user_id}
-
-
-💬 پیام:
-
-{message}
-"""
-
-    )
-
-
-
-
-
-# ==========================================================
-# Admin Approve
-# ==========================================================
-
-
-async def approve(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-
-    if update.effective_user.id != ADMIN_ID:
-
-        return
-
-
-
-    try:
-
-        user_id = int(
-            context.args[0]
+        INSERT INTO orders
+        (
+            telegram_id,
+            plan,
+            volume,
+            days,
+            price,
+            coupon
         )
 
-    except:
+        VALUES (?,?,?,?,?,?)
 
-        await update.message.reply_text(
-            "فرمت اشتباه است."
+        """,
+        (
+            telegram_id,
+            plan,
+            volume,
+            days,
+            price,
+            coupon
         )
-
-        return
-
-
-
-
-
-    order = get_order(
-        user_id
     )
 
 
+    db.commit()
 
-    if not order:
 
-        await update.message.reply_text(
-            "❌ سفارش پیدا نشد."
+    order_id = cursor.lastrowid
+
+
+    db.close()
+
+
+    return order_id
+
+
+
+
+# ==========================================================
+# دریافت سفارش با آیدی
+# ==========================================================
+
+def get_order_by_id(
+    order_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE id=?
+
+        """,
+        (
+            order_id,
         )
-
-        return
-
-
-
-
-
-    marzban = Marzban()
-
-
-
-    user = marzban.create_user(
-
-        username=str(user_id),
-
-        data_limit=order["volume"]
-
     )
 
 
+    order = cursor.fetchone()
 
-    if not user:
 
-        await update.message.reply_text(
+    db.close()
 
-            "❌ ساخت سرویس ناموفق بود."
 
+    return order
+
+
+
+
+# ==========================================================
+# آخرین سفارش کاربر
+# ==========================================================
+
+def last_order(
+    telegram_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE telegram_id=?
+
+        ORDER BY id DESC
+
+        LIMIT 1
+
+        """,
+        (
+            telegram_id,
         )
-
-        return
-
-
-
-
-
-    username = user["username"]
-
-
-    link = marzban.subscription(
-
-        username
-
     )
 
 
+    order = cursor.fetchone()
+
+
+    db.close()
+
+
+    return order
 
 
 
-    save_service(
 
-        telegram_id=user_id,
+# ==========================================================
+# تغییر وضعیت سفارش
+# ==========================================================
 
-        username=username,
+def update_order_status(
+    order_id,
+    status
+):
 
-        subscription_url=link,
+    db = get_db()
 
-        volume=order["volume"],
+    cursor = db.cursor()
 
-        days=order["days"],
 
-        order_id=order["id"]
+    cursor.execute(
+        """
+        UPDATE orders
 
+        SET status=?
+
+        WHERE id=?
+
+        """,
+        (
+            status,
+            order_id
+        )
     )
 
 
+    db.commit()
+
+    db.close()
 
 
+
+
+# ==========================================================
+# تایید پرداخت
+# ==========================================================
+
+def approve_payment(
+    order_id
+):
 
     update_order_status(
-
-        user_id,
-
+        order_id,
         "approved"
-
     )
-
-
-
-
-
-    await context.bot.send_message(
-
-        chat_id=user_id,
-
-        text=f"""
-🎉 پرداخت تایید شد.
-
-
-✅ سرویس شما فعال شد.
-
-
-🔐 لینک اتصال:
-
-{link}
-"""
-
-    )
-
-
-
-    await update.message.reply_text(
-
-        "✅ سرویس ساخته شد."
-
-    )
-
 
 
 
 
 # ==========================================================
-# Reject
+# رد پرداخت
 # ==========================================================
 
-
-async def reject(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+def reject_payment(
+    order_id
 ):
 
+    update_order_status(
+        order_id,
+        "rejected"
+    )
 
-    if update.effective_user.id != ADMIN_ID:
-
-        return
 
 
+
+# ==========================================================
+# سفارش‌های در انتظار
+# ==========================================================
+
+def pending_orders():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE status='pending'
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    orders = cursor.fetchall()
+
+
+    db.close()
+
+
+    return orders
+
+
+
+
+# ==========================================================
+# سفارش‌های تایید شده
+# ==========================================================
+
+def approved_orders():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM orders
+
+        WHERE status='approved'
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    orders = cursor.fetchall()
+
+
+    db.close()
+
+
+    return orders
+
+
+
+
+# ==========================================================
+# حذف سفارش
+# ==========================================================
+
+def delete_order(
+    order_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        DELETE FROM orders
+
+        WHERE id=?
+
+        """,
+        (
+            order_id,
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+    # ==========================================================
+# سرویس‌ها
+# Part 3/4
+# ==========================================================
+
+
+# ==========================================================
+# ذخیره سرویس
+# ==========================================================
+
+def save_service(
+    telegram_id,
+    order_id,
+    username,
+    subscription_url,
+    volume,
+    days,
+    expire_date=None
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        INSERT INTO subscriptions
+        (
+            telegram_id,
+            order_id,
+            username,
+            subscription_url,
+            volume,
+            days,
+            expire_date
+        )
+
+        VALUES (?,?,?,?,?,?,?)
+
+        """,
+        (
+            telegram_id,
+            order_id,
+            username,
+            subscription_url,
+            volume,
+            days,
+            expire_date
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# دریافت سرویس کاربر
+# ==========================================================
+
+def get_user_service(
+    telegram_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM subscriptions
+
+        WHERE telegram_id=?
+
+        ORDER BY id DESC
+
+        LIMIT 1
+
+        """,
+        (
+            telegram_id,
+        )
+    )
+
+
+    service = cursor.fetchone()
+
+
+    db.close()
+
+
+    return service
+
+
+
+
+# ==========================================================
+# همه سرویس‌ها
+# ==========================================================
+
+def all_services():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM subscriptions
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    services = cursor.fetchall()
+
+
+    db.close()
+
+
+    return services
+
+
+
+
+# ==========================================================
+# تعداد سرویس‌ها
+# ==========================================================
+
+def services_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+
+        FROM subscriptions
+
+        """
+    )
+
+
+    count = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return count
+
+
+
+
+# ==========================================================
+# رسید پرداخت
+# ==========================================================
+
+
+def save_receipt(
+    telegram_id,
+    file_id
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        INSERT INTO receipts
+        (
+            telegram_id,
+            file_id
+        )
+
+        VALUES (?,?)
+
+        """,
+        (
+            telegram_id,
+            file_id
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# رسیدهای منتظر
+# ==========================================================
+
+def pending_receipts():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM receipts
+
+        WHERE status='pending'
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    receipts = cursor.fetchall()
+
+
+    db.close()
+
+
+    return receipts
+
+
+
+
+# ==========================================================
+# تغییر وضعیت رسید
+# ==========================================================
+
+def update_receipt_status(
+    telegram_id,
+    status
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        UPDATE receipts
+
+        SET status=?
+
+        WHERE telegram_id=?
+
+        """,
+        (
+            status,
+            telegram_id
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+# ==========================================================
+# پشتیبانی
+# ==========================================================
+
+
+def save_support_message(
+    telegram_id,
+    message
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        INSERT INTO support
+        (
+            telegram_id,
+            message
+        )
+
+        VALUES (?,?)
+
+        """,
+        (
+            telegram_id,
+            message
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+def all_support_messages():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM support
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    messages = cursor.fetchall()
+
+
+    db.close()
+
+
+    return messages
+    # ==========================================================
+# کد تخفیف
+# Part 4/4
+# ==========================================================
+
+
+def create_coupon(
+    code,
+    percent,
+    max_use
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        INSERT INTO coupons
+        (
+            code,
+            percent,
+            max_use
+        )
+
+        VALUES (?,?,?)
+
+        """,
+        (
+            code.upper(),
+            percent,
+            max_use
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+def get_coupon(
+    code
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM coupons
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    coupon = cursor.fetchone()
+
+
+    db.close()
+
+
+    return coupon
+
+
+
+
+def check_coupon(
+    code
+):
+
+    coupon = get_coupon(
+        code
+    )
+
+
+    if not coupon:
+
+        return None
+
+
+
+    if coupon["used"] >= coupon["max_use"]:
+
+        return None
+
+
+
+    return coupon
+
+
+
+
+def use_coupon(
+    code
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        UPDATE coupons
+
+        SET used = used + 1
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+def all_coupons():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM coupons
+
+        ORDER BY id DESC
+
+        """
+    )
+
+
+    coupons = cursor.fetchall()
+
+
+    db.close()
+
+
+    return coupons
+
+
+
+
+def delete_coupon(
+    code
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        DELETE FROM coupons
+
+        WHERE code=?
+
+        """,
+        (
+            code.upper(),
+        )
+    )
+
+
+    db.commit()
+
+    db.close()
+
+
+
+
+
+# ==========================================================
+# آمار داشبورد
+# ==========================================================
+
+
+def today_users_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+
+        FROM users
+
+        WHERE DATE(created_at)=DATE('now')
+
+        """
+    )
+
+
+    count = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return count
+
+
+
+
+def sales_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+
+        FROM orders
+
+        WHERE status='approved'
+
+        """
+    )
+
+
+    count = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return count
+
+
+
+
+def total_income():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT SUM(price)
+
+        FROM orders
+
+        WHERE status='approved'
+
+        """
+    )
+
+
+    total = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return total or 0
+
+
+
+
+def pending_count():
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+
+        FROM orders
+
+        WHERE status='pending'
+
+        """
+    )
+
+
+    count = cursor.fetchone()[0]
+
+
+    db.close()
+
+
+    return count
+
+
+
+
+# ==========================================================
+# جستجو کاربران
+# ==========================================================
+
+
+def search_users(
+    text
+):
+
+    db = get_db()
+
+    cursor = db.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM users
+
+        WHERE telegram_id LIKE ?
+
+        OR username LIKE ?
+
+        ORDER BY id DESC
+
+        """,
+        (
+            f"%{text}%",
+            f"%{text}%"
+        )
+    )
+
+
+    users = cursor.fetchall()
+
+
+    db.close()
+
+
+    return users
+
+
+
+
+
+# ==========================================================
+# آمار کامل
+# ==========================================================
+
+
+def get_stats():
+
+    return {
+
+        "users":
+        users_count(),
+
+
+        "today_users":
+        today_users_count(),
+
+
+        "sales":
+        sales_count(),
+
+
+        "subscriptions":
+        services_count(),
+
+
+        "income":
+        total_income(),
+
+
+        "pending":
+        pending_count()
+
+    }
+
+
+
+
+
+# ==========================================================
+# تست دیتابیس
+# ==========================================================
+
+
+def test_database():
 
     try:
 
-        user_id = int(
-            context.args[0]
+        db = get_db()
+
+        db.close()
+
+
+        return True
+
+
+    except Exception as error:
+
+        print(
+            "DATABASE ERROR:",
+            error
         )
 
-    except:
 
-        return
-
-
-
-    update_order_status(
-
-        user_id,
-
-        "rejected"
-
-    )
-
-
-
-    await context.bot.send_message(
-
-        chat_id=user_id,
-
-        text="""
-❌ پرداخت رد شد.
-
-لطفاً دوباره ارسال کنید.
-"""
-
-    )
-
-
-    await update.message.reply_text(
-
-        "❌ رد شد."
-
-    )
-    # ==========================================================
-# Register Handlers
-# Part 4
-# ==========================================================
-
-
-from telegram.ext import (
-    CommandHandler,
-    CallbackQueryHandler,
-    MessageHandler,
-    filters
-)
-
-
+        return False
 
 
 
 # ==========================================================
-# Text Router
-# ==========================================================
-
-
-async def text_router(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-
-    if context.user_data.get(
-        "waiting_support"
-    ):
-
-        await support_message(
-            update,
-            context
-        )
-
-        return
-
-
-
-    await update.message.reply_text(
-
-        """
-❌ دستور قابل تشخیص نیست.
-
-از منوی ربات استفاده کنید.
-"""
-
-    )
-
-
-
-
-
-# ==========================================================
-# Register All
-# ==========================================================
-
-
-def register_handlers(
-    application
-):
-
-
-    # --------------------------
-    # Start
-    # --------------------------
-
-    application.add_handler(
-
-        CommandHandler(
-            "start",
-            start
-        )
-
-    )
-
-
-
-    # --------------------------
-    # Admin Commands
-    # --------------------------
-
-    application.add_handler(
-
-        CommandHandler(
-            "approve",
-            approve
-        )
-
-    )
-
-
-    application.add_handler(
-
-        CommandHandler(
-            "reject",
-            reject
-        )
-
-    )
-
-
-
-    # --------------------------
-    # Main Buttons
-    # --------------------------
-
-
-    application.add_handler(
-
-        CallbackQueryHandler(
-            buy,
-            pattern="^buy$"
-        )
-
-    )
-
-
-    application.add_handler(
-
-        CallbackQueryHandler(
-            my_service,
-            pattern="^my_service$"
-        )
-
-    )
-
-
-    application.add_handler(
-
-        CallbackQueryHandler(
-            payment,
-            pattern="^payment$"
-        )
-
-    )
-
-
-    application.add_handler(
-
-        CallbackQueryHandler(
-            support,
-            pattern="^support$"
-        )
-
-    )
-
-
-
-    # --------------------------
-    # Plans
-    # --------------------------
-
-
-    application.add_handler(
-
-        CallbackQueryHandler(
-            select_plan,
-            pattern="^plan_"
-        )
-
-    )
-
-
-
-    # --------------------------
-    # Receipt
-    # --------------------------
-
-
-    application.add_handler(
-
-        MessageHandler(
-
-            filters.PHOTO,
-
-            receipt_photo
-
-        )
-
-    )
-
-
-
-    # --------------------------
-    # Text
-    # --------------------------
-
-
-    application.add_handler(
-
-        MessageHandler(
-
-            filters.TEXT
-            &
-            ~filters.COMMAND,
-
-            text_router
-
-        )
-
-    )
-
-
-# ==========================================================
-# END handlers.py
+# END database.py
 # Zeus Shop VPN PRO
 # ==========================================================
