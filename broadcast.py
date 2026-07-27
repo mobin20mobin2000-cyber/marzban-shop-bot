@@ -1,11 +1,19 @@
 # ==========================================================
 # Zeus Shop VPN PRO
 # broadcast.py
-# Part 1/2
+# CLEAN VERSION
 # ==========================================================
 
 
+import sqlite3
+from datetime import datetime
+
+
 from database import get_all_users
+
+
+
+DB_NAME = "zeus.db"
 
 
 
@@ -79,12 +87,9 @@ async def send_broadcast(
 
     return {
 
-
         "success": success,
 
-
         "failed": failed,
-
 
         "total": len(users)
 
@@ -96,8 +101,10 @@ async def send_broadcast(
 
 
 
+
+
 # ==========================================================
-# Send Broadcast With Header
+# Professional Message Template
 # ==========================================================
 
 
@@ -131,17 +138,10 @@ async def send_broadcast_pro(
         text
 
     )
-    # ==========================================================
-# Broadcast History + Report
-# Part 2/2
-# ==========================================================
 
 
-import sqlite3
-from datetime import datetime
 
 
-DB_NAME = "zeus.db"
 
 
 
@@ -246,7 +246,7 @@ def save_broadcast_history(
 
 
 # ==========================================================
-# Full Broadcast Function
+# Final Broadcast Function
 # ==========================================================
 
 
